@@ -69,7 +69,7 @@ func main() {
 	mux.HandleFunc("POST /api/analyze-pdf", deps.HandleAnalyzePDF)
 
 	addr := fmt.Sprintf(":%s", port)
-	log.Printf("Guitar Buddy listening on port %s", port)
+	log.Printf("🎸 Avoidnt listening on port %s", port)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 

@@ -1,8 +1,8 @@
-# Copilot Instructions — avoidnt (Guitar Buddy)
+# Copilot Instructions — Avoidnt
 
 ## What This Is
 
-A **guitar practice tracker** web app. Users upload sheet music PDFs, crop regions into exercises, organize them into song sections, and track practice progress through 5 stages. Built as a single Go binary with server-rendered HTML + htmx for interactivity. Deployed on Railway.
+A **guitar practice tracker** web app. Users upload sheet music PDFs, crop regions into exercises, organize them into song sections, and track practice progress through 5 stages. Built as a single Go binary with server-rendered HTML + htmx for interactivity. Deployed on Railway via Dockerfile.
 
 ## Architecture
 

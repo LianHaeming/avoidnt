@@ -1,6 +1,5 @@
 # Binaries
 avoidnt
-guitar-buddy
 *.exe
 *.exe~
 *.dll
