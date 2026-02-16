@@ -12,6 +12,16 @@ import (
 )
 
 func main() {
+	// Log working directory for deployment debugging
+	if wd, err := os.Getwd(); err == nil {
+		log.Printf("Working directory: %s", wd)
+	}
+	if entries, err := os.ReadDir("."); err == nil {
+		for _, e := range entries {
+			log.Printf("  %s", e.Name())
+		}
+	}
+
 	// Configuration from environment (with sensible defaults)
 	port := envOr("PORT", "8000")
 	songsPath := envOr("SONGS_STORAGE_PATH", "data/songs")
