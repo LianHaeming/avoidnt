@@ -1,1 +1,10 @@
-../../server/dev-storage/settings.json
+{
+  "theme": "dark",
+  "stageNames": [
+    "Not started",
+    "Getting there",
+    "Slow \u0026 clean",
+    "Up to tempo",
+    "Nailed it"
+  ]
+}

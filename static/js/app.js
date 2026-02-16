@@ -174,27 +174,26 @@ document.addEventListener('keydown', function(e) {
 document.addEventListener('click', function(e) {
   const menu = document.getElementById('user-menu');
   if (menu && menu.open && !menu.contains(e.target)) {
-    menu.open = false;
+    menu.open = false; 
   }
 });
 
 // ===== Spotify Album Art (oEmbed) =====
 (function() {
-  const cache = {};
+  const inflight = {};
 
   function fetchSpotifyThumbnail(spotifyUrl) {
-    if (cache[spotifyUrl] !== undefined) return Promise.resolve(cache[spotifyUrl]);
+    if (inflight[spotifyUrl] !== undefined) return inflight[spotifyUrl];
     if (!spotifyUrl || !/^https?:\/\/(open\.)?spotify\.com\/(track|album|playlist|artist)\//.test(spotifyUrl)) {
       return Promise.resolve('');
     }
-    return fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(spotifyUrl))
+    inflight[spotifyUrl] = fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(spotifyUrl))
       .then(function(res) { return res.ok ? res.json() : null; })
       .then(function(data) {
-        var url = (data && data.thumbnail_url) || '';
-        cache[spotifyUrl] = url;
-        return url;
+        return (data && data.thumbnail_url) || '';
       })
-      .catch(function() { cache[spotifyUrl] = ''; return ''; });
+      .catch(function() { return ''; });
+    return inflight[spotifyUrl];
   }
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -202,11 +201,17 @@ document.addEventListener('click', function(e) {
     document.querySelectorAll('.song-card[data-spotify-url]').forEach(function(card) {
       var spotifyUrl = card.getAttribute('data-spotify-url');
       if (!spotifyUrl) return;
+      var container = card.querySelector('.card-thumbnail');
+      if (!container) return;
+      // Show spinner immediately while waiting for Spotify art
+      container.innerHTML = '<div class="thumbnail-spinner"></div>';
       fetchSpotifyThumbnail(spotifyUrl).then(function(thumbUrl) {
-        if (!thumbUrl) return;
-        var container = card.querySelector('.card-thumbnail');
-        if (!container) return;
-        // Replace content with album art
+        if (!thumbUrl) {
+          // Restore placeholder if fetch failed
+          container.innerHTML = '<div class="thumbnail-placeholder">🎵</div>';
+          return;
+        }
+        // Replace spinner with album art
         container.innerHTML = '<img src="' + thumbUrl + '" alt="" class="thumbnail-img" loading="lazy" />';
       });
     });
