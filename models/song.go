@@ -25,31 +25,33 @@ type Section struct {
 
 // Exercise contains one or more crops to practice.
 type Exercise struct {
-	ID                    string  `json:"id"`
-	Name                  string  `json:"name"`
-	SectionID             string  `json:"sectionId"`
-	Difficulty            int     `json:"difficulty"`
-	Stage                 int     `json:"stage"`
-	Crops                 []Crop  `json:"crops"`
-	TotalPracticedSeconds int     `json:"totalPracticedSeconds"`
-	TotalReps             int     `json:"totalReps"`
-	LastPracticedAt       *string `json:"lastPracticedAt"`
-	CreatedAt             string  `json:"createdAt"`
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	SectionID             string   `json:"sectionId"`
+	Difficulty            int      `json:"difficulty"`
+	Stage                 int      `json:"stage"`
+	Crops                 []Crop   `json:"crops"`
+	TotalPracticedSeconds int      `json:"totalPracticedSeconds"`
+	TotalReps             int      `json:"totalReps"`
+	LastPracticedAt       *string  `json:"lastPracticedAt"`
+	CreatedAt             string   `json:"createdAt"`
+	CropScale             *float64 `json:"cropScale,omitempty"`
 }
 
 // Song is the top-level domain model.
 type Song struct {
-	ID         string     `json:"id"`
-	Title      string     `json:"title"`
-	Artist     string     `json:"artist"`
-	Tempo      *float64   `json:"tempo"`
-	YoutubeURL *string    `json:"youtubeUrl"`
-	SpotifyURL *string    `json:"spotifyUrl"`
-	JobID      string     `json:"jobId"`
-	PageCount  int        `json:"pageCount"`
-	Structure  []Section  `json:"structure"`
-	Exercises  []Exercise `json:"exercises"`
-	CreatedAt  string     `json:"createdAt"`
+	ID          string     `json:"id"`
+	Title       string     `json:"title"`
+	Artist      string     `json:"artist"`
+	Tempo       *float64   `json:"tempo"`
+	YoutubeURL  *string    `json:"youtubeUrl"`
+	SpotifyURL  *string    `json:"spotifyUrl"`
+	JobID       string     `json:"jobId"`
+	PageCount   int        `json:"pageCount"`
+	Structure   []Section  `json:"structure"`
+	Exercises   []Exercise `json:"exercises"`
+	CreatedAt   string     `json:"createdAt"`
+	CropBgColor *string    `json:"cropBgColor,omitempty"`
 }
 
 // SongSummary is used for the browse/list view.

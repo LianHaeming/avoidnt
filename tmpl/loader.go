@@ -67,6 +67,7 @@ func Load() *Templates {
 		// Time
 		"relativeTime":   relativeTime,
 		"formatDuration": formatDuration,
+		"formatTimer":    formatTimer,
 
 		// Nil / comparison helpers
 		"deref": func(p *int) int {
@@ -223,4 +224,14 @@ func formatDuration(seconds int) string {
 		return fmt.Sprintf("%d min total", minutes)
 	}
 	return "0 min"
+}
+
+func formatTimer(seconds int) string {
+	hours := seconds / 3600
+	minutes := (seconds % 3600) / 60
+	secs := seconds % 60
+	if hours > 0 {
+		return fmt.Sprintf("%d:%02d:%02d", hours, minutes, secs)
+	}
+	return fmt.Sprintf("%d:%02d", minutes, secs)
 }

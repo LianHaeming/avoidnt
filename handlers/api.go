@@ -29,6 +29,10 @@ func (d *Deps) HandleSaveSong(w http.ResponseWriter, r *http.Request) {
 	// Preserve practice data from existing song
 	existing, _ := d.Songs.Get(song.ID)
 	if existing != nil {
+		// Preserve display settings
+		if song.CropBgColor == nil && existing.CropBgColor != nil {
+			song.CropBgColor = existing.CropBgColor
+		}
 		existingExMap := map[string]*models.Exercise{}
 		for i := range existing.Exercises {
 			existingExMap[existing.Exercises[i].ID] = &existing.Exercises[i]
@@ -40,6 +44,9 @@ func (d *Deps) HandleSaveSong(w http.ResponseWriter, r *http.Request) {
 				ex.TotalPracticedSeconds = old.TotalPracticedSeconds
 				ex.TotalReps = old.TotalReps
 				ex.LastPracticedAt = old.LastPracticedAt
+				if ex.CropScale == nil && old.CropScale != nil {
+					ex.CropScale = old.CropScale
+				}
 			}
 		}
 	}
@@ -70,10 +77,11 @@ func (d *Deps) HandleDeleteSong(w http.ResponseWriter, r *http.Request) {
 
 // PatchExerciseRequest is the JSON body for PATCH exercise.
 type PatchExerciseRequest struct {
-	Stage                 *int    `json:"stage"`
-	TotalPracticedSeconds *int    `json:"totalPracticedSeconds"`
-	TotalReps             *int    `json:"totalReps"`
-	LastPracticedAt       *string `json:"lastPracticedAt"`
+	Stage                 *int     `json:"stage"`
+	TotalPracticedSeconds *int     `json:"totalPracticedSeconds"`
+	TotalReps             *int     `json:"totalReps"`
+	LastPracticedAt       *string  `json:"lastPracticedAt"`
+	CropScale             *float64 `json:"cropScale"`
 }
 
 // HandlePatchExercise partially updates an exercise.
@@ -109,6 +117,9 @@ func (d *Deps) HandlePatchExercise(w http.ResponseWriter, r *http.Request) {
 			if req.LastPracticedAt != nil {
 				ex.LastPracticedAt = req.LastPracticedAt
 			}
+			if req.CropScale != nil {
+				ex.CropScale = req.CropScale
+			}
 			found = true
 			break
 		}
@@ -117,6 +128,43 @@ func (d *Deps) HandlePatchExercise(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		jsonError(w, "Exercise not found", http.StatusNotFound)
 		return
+	}
+
+	if err := d.Songs.Save(song); err != nil {
+		jsonError(w, "Failed to save", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"success": true})
+}
+
+// PatchSongDisplayRequest is the JSON body for PATCH song display settings.
+type PatchSongDisplayRequest struct {
+	CropBgColor *string `json:"cropBgColor"`
+}
+
+// HandlePatchSongDisplay updates song-level display settings (crop background color, etc.).
+func (d *Deps) HandlePatchSongDisplay(w http.ResponseWriter, r *http.Request) {
+	songID := r.PathValue("songId")
+
+	var req PatchSongDisplayRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	song, err := d.Songs.Get(songID)
+	if err != nil || song == nil {
+		jsonError(w, "Song not found", http.StatusNotFound)
+		return
+	}
+
+	if req.CropBgColor != nil {
+		if *req.CropBgColor == "" {
+			song.CropBgColor = nil
+		} else {
+			song.CropBgColor = req.CropBgColor
+		}
 	}
 
 	if err := d.Songs.Save(song); err != nil {

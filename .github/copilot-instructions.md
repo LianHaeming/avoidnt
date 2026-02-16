@@ -65,3 +65,7 @@ PDF conversion requires **mutool** (mupdf-tools) or **pdftoppm** (poppler) on th
 - **Data migration** — `storage/songs.go:migrateSong()` normalizes legacy data on read (nil slices → empty, stage/difficulty clamped to 1–5).
 - **5 practice stages** (1–5) with color coding defined in both `models/helpers.go` and `tmpl/loader.go`. Stage names are user-configurable via settings.
 - **No test framework** is set up — there are no test files in the project.
+
+## Debugging Rules
+
+- **Always grep for all instances of a CSS class/selector across the entire stylesheet before diagnosing or fixing a styling issue.** Duplicate rules in different parts of `app.css` can override each other unexpectedly.

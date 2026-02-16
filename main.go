@@ -55,6 +55,7 @@ func main() {
 	mux.HandleFunc("POST /api/songs", deps.HandleSaveSong)
 	mux.HandleFunc("DELETE /api/songs/{songId}", deps.HandleDeleteSong)
 	mux.HandleFunc("PATCH /api/songs/{songId}/exercises/{exerciseId}", deps.HandlePatchExercise)
+	mux.HandleFunc("PATCH /api/songs/{songId}/display", deps.HandlePatchSongDisplay)
 	mux.HandleFunc("GET /api/songs/{songId}/preview/{cropId}", deps.HandlePreview)
 
 	// Settings

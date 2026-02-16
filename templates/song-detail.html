@@ -1,5 +1,5 @@
 {{define "content"}}
-<div class="exercise-view" id="exercise-view">
+<div class="exercise-view" id="exercise-view"{{if notNil .Song.CropBgColor}} data-crop-bg-color="{{derefStr .Song.CropBgColor}}"{{end}}>
   <!-- Song Header -->
   <header class="song-header-wrapper"{{if notNil .Song.SpotifyURL}} data-spotify-url="{{derefStr .Song.SpotifyURL}}"{{end}}>
     <div class="song-header">
@@ -17,7 +17,17 @@
         </div>
       </div>
       <div class="song-header-right">
-        <button class="edit-song-btn" onclick="location.href='/songs/{{.Song.ID}}/edit'" title="Edit in Plan Designer">&#8942;</button>
+        <div class="song-detail-menu" id="song-detail-menu">
+          <button class="edit-song-btn" onclick="toggleSongDetailMenu(event)" title="Options">&#8942;</button>
+          <div class="song-detail-dropdown" id="song-detail-dropdown">
+            <button class="menu-item" onclick="location.href='/songs/{{.Song.ID}}/edit'; closeSongDetailMenu();">
+              <span>✏️</span> Edit Song
+            </button>
+            <button class="menu-item" onclick="toggleEditExercises(); closeSongDetailMenu();">
+              <span>🎨</span> Edit Exercises
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -42,6 +52,30 @@
 
   <hr class="header-separator" />
 
+  <!-- Edit Exercises Toolbar -->
+  <div class="edit-exercises-toolbar" id="edit-exercises-toolbar" style="display:none" data-song-id="{{.Song.ID}}">
+    <div class="edit-toolbar-header">
+      <span class="edit-toolbar-title">Edit Exercises</span>
+      <button class="edit-toolbar-done" onclick="toggleEditExercises()">Done</button>
+    </div>
+    <div class="edit-toolbar-row">
+      <label class="edit-toolbar-label">Crop Background</label>
+      <div class="edit-toolbar-colors">
+        <button class="color-swatch{{if not (notNil .Song.CropBgColor)}} active{{end}}" data-color="" style="background:#ffffff;border:1px solid #d1d5db;" onclick="setCropBgColor(this,'')" title="White (default)"></button>
+        <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#1e1e1e")}} active{{end}}" data-color="#1e1e1e" style="background:#1e1e1e;" onclick="setCropBgColor(this,'#1e1e1e')" title="Dark"></button>
+        <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#2d2b1f")}} active{{end}}" data-color="#2d2b1f" style="background:#2d2b1f;" onclick="setCropBgColor(this,'#2d2b1f')" title="Warm Dark"></button>
+        <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#1a1f2e")}} active{{end}}" data-color="#1a1f2e" style="background:#1a1f2e;" onclick="setCropBgColor(this,'#1a1f2e')" title="Blue Dark"></button>
+        <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#f5f0e6")}} active{{end}}" data-color="#f5f0e6" style="background:#f5f0e6;" onclick="setCropBgColor(this,'#f5f0e6')" title="Warm"></button>
+        <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#e8e4d9")}} active{{end}}" data-color="#e8e4d9" style="background:#e8e4d9;" onclick="setCropBgColor(this,'#e8e4d9')" title="Sepia"></button>
+        <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#d4dce6")}} active{{end}}" data-color="#d4dce6" style="background:#d4dce6;" onclick="setCropBgColor(this,'#d4dce6')" title="Cool"></button>
+        <input type="color" class="color-custom-input" id="crop-bg-custom"
+               value="{{if notNil .Song.CropBgColor}}{{derefStr .Song.CropBgColor}}{{else}}#ffffff{{end}}"
+               onchange="setCropBgColor(null,this.value)" title="Custom color" />
+      </div>
+    </div>
+    <p class="edit-toolbar-hint">Drag the bottom edge of each exercise to resize crops.</p>
+  </div>
+
   {{if eq (len .Song.Exercises) 0}}
     <div class="empty-state">
       <h3>No Exercises Yet</h3>
@@ -65,82 +99,58 @@
         <div class="expanded-list">
           {{range .Exercises}}
           <div class="expanded-card" id="card-{{.ID}}"
-               style="background:{{stageTint .Stage | safeCSS}};border-color:{{stageBorder .Stage | safeCSS}}"
+               style="border-left-color:{{stageColor .Stage | safeCSS}}"
                data-song-id="{{$.Song.ID}}" data-exercise-id="{{.ID}}"
                data-section-id="{{.SectionID}}"
                data-stage="{{.Stage}}"
+               data-crop-scale="{{if .CropScale}}{{derefFloat .CropScale}}{{else}}100{{end}}"
                data-total-seconds="{{.TotalPracticedSeconds}}" data-total-reps="{{.TotalReps}}">
-            <!-- Card Content -->
-            <div class="expanded-content">
-              <div class="expanded-top-row">
-                <h3 class="expanded-name">{{.Name}}</h3>
-                <span class="expanded-difficulty">D{{.Difficulty}}</span>
+
+            <!-- Crop area with overlaid info -->
+            <div class="card-crop-area" onclick="cardCropClick(this.closest('.expanded-card'))"
+                 {{if notNil $.Song.CropBgColor}}style="background:{{derefStr $.Song.CropBgColor}}"{{end}}>
+              <!-- Top-left: name -->
+              <div class="card-overlay-header">
+                <h3 class="card-title-name">{{.Name}}</h3>
               </div>
 
-              <!-- Stage dropdown -->
-              <div class="expanded-stage-row">
-                <span class="stage-dropdown-label">Stage:</span>
-                <select class="stage-dropdown" aria-label="Stage"
+              {{if and (gt (len .Crops) 0) $.Song.JobID}}
+                {{range $i, $crop := .Crops}}
+                <div class="card-crop-item">
+                  <img src="/api/songs/{{$.Song.ID}}/preview/{{$crop.ID}}" alt="crop {{add $i 1}}" class="card-crop-img" loading="lazy"
+                       onerror="this.outerHTML='<div class=\'card-crop-placeholder\'><span>Failed to load</span></div>'" />
+                </div>
+                {{end}}
+              {{else}}
+                <div class="card-crop-placeholder"><span>🎵</span></div>
+              {{end}}
+
+              <!-- Drag handle for crop resize (visible in edit mode) -->
+              <div class="card-crop-resize-handle" onmousedown="cropResizeStart(event, this)" ontouchstart="cropResizeStart(event, this)">
+                <span class="resize-handle-bar"></span>
+              </div>
+
+              <!-- Bottom-left: stage + controls -->
+              <div class="card-overlay-controls" onclick="event.stopPropagation()">
+                <select class="card-stage-select" aria-label="Stage"
                         style="color:{{stageColor .Stage | safeCSS}}"
-                        onchange="onStageChange(this,'{{$.Song.ID}}','{{.ID}}')"
-                        onclick="event.stopPropagation()">
+                        onchange="onStageChange(this,'{{$.Song.ID}}','{{.ID}}')">
                   {{$currentStage := .Stage}}
                   {{range seq 5}}
                   <option value="{{.}}" {{if eq . $currentStage}}selected{{end}}>{{index $.Settings.StageNames (sub . 1)}}</option>
                   {{end}}
                 </select>
+                <button class="card-timer-btn" onclick="cardStartTimer(this.closest('.expanded-card'))" title="Start timer">
+                  <svg class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  <svg class="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+                </button>
+                <span class="card-timer-display">{{formatTimer .TotalPracticedSeconds}}</span>
+                <span class="card-reps-label">Reps</span>
+                <span class="card-reps-count">{{.TotalReps}}</span>
+                <button class="card-rep-btn" onclick="cardAddReps(this,1)">+1</button>
+                <button class="card-rep-btn" onclick="cardAddReps(this,5)">+5</button>
               </div>
 
-              <!-- Practice controls (shown when active) -->
-              <div class="practice-controls" style="display:none">
-                <!-- Timer -->
-                <div class="inline-control-block inline-timer-block">
-                  <span class="inline-control-label">Timer</span>
-                  <div class="inline-timer-row">
-                    <button class="inline-timer-toggle" onclick="event.stopPropagation();toggleTimer(this)">Play</button>
-                    <span class="inline-timer-display">0:00</span>
-                  </div>
-                </div>
-                <!-- Reps -->
-                <div class="inline-control-block">
-                  <span class="inline-control-label">Reps</span>
-                  <div class="inline-reps-row">
-                    <span class="inline-reps-count">{{.TotalReps}}</span>
-                    <button class="inline-reps-btn" onclick="event.stopPropagation();addReps(this,1)">+1</button>
-                    <button class="inline-reps-btn" onclick="event.stopPropagation();addReps(this,5)">+5</button>
-                    <button class="inline-reps-btn" onclick="event.stopPropagation();addReps(this,10)">+10</button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="expanded-stats">
-                <span class="stat-item">{{relativeTime .LastPracticedAt}}</span>
-                <span class="stat-item">{{formatDuration .TotalPracticedSeconds}}</span>
-              </div>
-            </div>
-
-            <!-- Thumbnail / Crop area -->
-            <div class="expanded-thumbnail" onclick="openPractice(this.closest('.expanded-card'))">
-              {{if and (gt (len .Crops) 0) $.Song.JobID}}
-                <img src="/api/songs/{{$.Song.ID}}/preview/{{(index .Crops 0).ID}}" alt="{{.Name}}" loading="lazy"
-                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"  />
-                <div class="thumbnail-placeholder large" style="display:none">🎵</div>
-              {{else}}
-                <div class="thumbnail-placeholder large">🎵</div>
-              {{end}}
-
-              <!-- Expanded crops (shown when active) -->
-              <div class="inline-crop-stack" style="display:none">
-                {{range $i, $crop := .Crops}}
-                <div class="inline-crop-card">
-                  <img src="/api/songs/{{$.Song.ID}}/preview/{{$crop.ID}}" alt="crop {{add $i 1}}" class="inline-crop-image" loading="eager"
-                       onerror="this.outerHTML='<div class=\'inline-crop-placeholder\'><span>Failed to load</span></div>'" />
-                </div>
-                {{end}}
-                {{if eq (len .Crops) 0}}
-                <div class="inline-crop-empty"><p>No crops for this exercise</p></div>
-                {{end}}
-              </div>
             </div>
           </div>
           {{end}}
@@ -154,5 +164,5 @@
   <div id="practice-backdrop" class="practice-backdrop" style="display:none" onclick="closePractice()"></div>
 </div>
 
-<script src="/static/js/timer.js"></script>
+<script src="/static/js/timer.js?v=4"></script>
 {{end}}

@@ -8,169 +8,79 @@ const SAVE_INTERVAL = 30;
 const INACTIVITY_LIMIT = 120000;
 let _inactivityTimeout = null;
 
-function openPractice(card) {
+// ===== Play button starts timer =====
+function cardStartTimer(card) {
+  if (!card) return;
+
+  // If already timing this card, ignore (use crop to pause)
+  if (_activeCard === card && _isTimerRunning) return;
+
+  // If another card is actively timing, stop it first
   if (_activeCard && _activeCard !== card) {
-    closePractice();
+    _stopCardTimer(_activeCard);
   }
+
   _activeCard = card;
-
-  // Show practice controls
-  const controls = card.querySelector('.practice-controls');
-  if (controls) controls.style.display = 'flex';
-
-  // Show expanded crops, hide thumbnail
-  const thumb = card.querySelector('.expanded-thumbnail');
-  if (thumb) {
-    const defaultImg = thumb.querySelector(':scope > img');
-    const defaultPlaceholder = thumb.querySelector(':scope > .thumbnail-placeholder');
-    const cropStack = thumb.querySelector('.inline-crop-stack');
-    if (defaultImg) defaultImg.style.display = 'none';
-    if (defaultPlaceholder) defaultPlaceholder.style.display = 'none';
-    if (cropStack) cropStack.style.display = 'flex';
-  }
-
-  // Add active class
-  card.classList.add('active-card');
-
-  // Show backdrop
-  const backdrop = document.getElementById('practice-backdrop');
-  if (backdrop) backdrop.style.display = 'block';
-
-  // Lock scroll
-  const view = document.getElementById('exercise-view');
-  if (view) view.classList.add('scroll-locked');
-
-  // Initialize timer
   _localSeconds = parseInt(card.dataset.totalSeconds) || 0;
   _lastSaveTime = _localSeconds;
-  updateTimerDisplay(card);
-  startTimer(card);
-
-  // Scroll card into view
-  setTimeout(() => {
-    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    card.setAttribute('tabindex', '-1');
-    card.focus({ preventScroll: true });
-  }, 50);
-}
-
-function closePractice() {
-  if (!_activeCard) return;
-  pauseTimer();
-  saveTimeIfNeeded();
-  clearInactivityTimeout();
-
-  const card = _activeCard;
-
-  // Hide practice controls
-  const controls = card.querySelector('.practice-controls');
-  if (controls) controls.style.display = 'none';
-
-  // Restore thumbnail
-  const thumb = card.querySelector('.expanded-thumbnail');
-  if (thumb) {
-    const defaultImg = thumb.querySelector(':scope > img');
-    const defaultPlaceholder = thumb.querySelector(':scope > .thumbnail-placeholder');
-    const cropStack = thumb.querySelector('.inline-crop-stack');
-    if (defaultImg) defaultImg.style.display = '';
-    if (defaultPlaceholder && !defaultImg) defaultPlaceholder.style.display = '';
-    if (cropStack) cropStack.style.display = 'none';
-  }
-
-  // Remove active class
-  card.classList.remove('active-card');
-
-  // Hide backdrop
-  const backdrop = document.getElementById('practice-backdrop');
-  if (backdrop) backdrop.style.display = 'none';
-
-  // Unlock scroll
-  const view = document.getElementById('exercise-view');
-  if (view) view.classList.remove('scroll-locked');
-
-  _activeCard = null;
-}
-
-function startTimer(card) {
-  pauseTimer();
   _isTimerRunning = true;
   resetInactivityTimeout();
-  const toggle = card.querySelector('.inline-timer-toggle');
-  if (toggle) toggle.textContent = 'Pause';
 
-  _timerInterval = setInterval(() => {
+  card.classList.add('timing');
+
+  _timerInterval = setInterval(function() {
     _localSeconds++;
-    updateTimerDisplay(card);
+    card.dataset.totalSeconds = _localSeconds;
+    _updateCardTimerDisplay(card);
     if (_localSeconds - _lastSaveTime >= SAVE_INTERVAL) saveTime();
   }, 1000);
 }
 
-function pauseTimer() {
+// ===== Clicking crop toggles timer =====
+function cardCropClick(card) {
+  if (!card) return;
+  if (_activeCard === card && _isTimerRunning) {
+    _stopCardTimer(card);
+  } else {
+    cardStartTimer(card);
+  }
+}
+
+function _stopCardTimer(card) {
   _isTimerRunning = false;
   clearInactivityTimeout();
-  if (_timerInterval) {
-    clearInterval(_timerInterval);
-    _timerInterval = null;
-  }
-  if (_activeCard) {
-    const toggle = _activeCard.querySelector('.inline-timer-toggle');
-    if (toggle) toggle.textContent = 'Play';
-  }
+  if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
+  saveTimeIfNeeded();
+
+  card.classList.remove('timing');
+  _activeCard = null;
 }
 
-function toggleTimer(btn) {
-  if (!_activeCard) return;
-  if (_isTimerRunning) {
-    pauseTimer();
-    saveTimeIfNeeded();
-  } else {
-    startTimer(_activeCard);
-  }
-}
-
-function updateTimerDisplay(card) {
-  const display = card.querySelector('.inline-timer-display');
+function _updateCardTimerDisplay(card) {
+  var display = card.querySelector('.card-timer-display');
   if (!display) return;
-  const hours = Math.floor(_localSeconds / 3600);
-  const minutes = Math.floor((_localSeconds % 3600) / 60);
-  const seconds = _localSeconds % 60;
-  const pad = n => n.toString().padStart(2, '0');
-  display.textContent = hours > 0
-    ? hours + ':' + pad(minutes) + ':' + pad(seconds)
-    : minutes + ':' + pad(seconds);
+  var hours = Math.floor(_localSeconds / 3600);
+  var minutes = Math.floor((_localSeconds % 3600) / 60);
+  var seconds = _localSeconds % 60;
+  var pad = function(n) { return n.toString().padStart(2, '0'); };
+  if (hours > 0) {
+    display.textContent = hours + ':' + pad(minutes) + ':' + pad(seconds);
+  } else {
+    display.textContent = minutes + ':' + pad(seconds);
+  }
 }
 
-function saveTimeIfNeeded() {
-  if (_localSeconds > _lastSaveTime) saveTime();
-}
-
-function saveTime() {
-  if (!_activeCard) return;
-  const songId = _activeCard.dataset.songId;
-  const exerciseId = _activeCard.dataset.exerciseId;
-  fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      totalPracticedSeconds: _localSeconds,
-      lastPracticedAt: new Date().toISOString()
-    })
-  }).then(() => {
-    _lastSaveTime = _localSeconds;
-    _activeCard.dataset.totalSeconds = _localSeconds;
-  }).catch(console.error);
-}
-
-// ===== Reps =====
-function addReps(btn, count) {
-  if (!_activeCard) return;
-  const songId = _activeCard.dataset.songId;
-  const exerciseId = _activeCard.dataset.exerciseId;
-  let totalReps = parseInt(_activeCard.dataset.totalReps) || 0;
+// ===== Card-level reps (always visible) =====
+function cardAddReps(btn, count) {
+  var card = btn.closest('.expanded-card');
+  if (!card) return;
+  var songId = card.dataset.songId;
+  var exerciseId = card.dataset.exerciseId;
+  var totalReps = parseInt(card.dataset.totalReps) || 0;
   totalReps += count;
-  _activeCard.dataset.totalReps = totalReps;
+  card.dataset.totalReps = totalReps;
 
-  const display = _activeCard.querySelector('.inline-reps-count');
+  var display = card.querySelector('.card-reps-count');
   if (display) display.textContent = totalReps;
 
   fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
@@ -183,13 +93,38 @@ function addReps(btn, count) {
   }).catch(console.error);
 }
 
+function closePractice() {
+  if (!_activeCard) return;
+  _stopCardTimer(_activeCard);
+}
+
+function saveTimeIfNeeded() {
+  if (_localSeconds > _lastSaveTime) saveTime();
+}
+
+function saveTime() {
+  if (!_activeCard) return;
+  var songId = _activeCard.dataset.songId;
+  var exerciseId = _activeCard.dataset.exerciseId;
+  fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      totalPracticedSeconds: _localSeconds,
+      lastPracticedAt: new Date().toISOString()
+    })
+  }).then(function() {
+    _lastSaveTime = _localSeconds;
+    _activeCard.dataset.totalSeconds = _localSeconds;
+  }).catch(console.error);
+}
+
 // ===== Inactivity =====
 function resetInactivityTimeout() {
   clearInactivityTimeout();
-  _inactivityTimeout = setTimeout(() => {
-    if (_isTimerRunning) {
-      pauseTimer();
-      saveTimeIfNeeded();
+  _inactivityTimeout = setTimeout(function() {
+    if (_isTimerRunning && _activeCard) {
+      _stopCardTimer(_activeCard);
     }
   }, INACTIVITY_LIMIT);
 }
@@ -202,14 +137,13 @@ function clearInactivityTimeout() {
 }
 
 // User activity resets inactivity
-['click', 'touchstart', 'wheel', 'keydown'].forEach(evt => {
-  document.addEventListener(evt, () => {
+['click', 'touchstart', 'wheel', 'keydown'].forEach(function(evt) {
+  document.addEventListener(evt, function() {
     if (_isTimerRunning) resetInactivityTimeout();
   });
 });
 
 // Save on page unload
-window.addEventListener('beforeunload', () => {
-  pauseTimer();
-  saveTimeIfNeeded();
+window.addEventListener('beforeunload', function() {
+  if (_activeCard) _stopCardTimer(_activeCard);
 });

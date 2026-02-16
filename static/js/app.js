@@ -148,8 +148,7 @@ function onStageChange(select, songId, exerciseId) {
     const colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
     const color = colors[newStage] || '#9ca3af';
     select.style.color = color;
-    card.style.background = hexToRGBA(color, 0.1);
-    card.style.borderColor = hexToRGBA(color, 0.35);
+    card.style.borderLeftColor = color;
     card.dataset.stage = newStage;
 
     // Update section nav pill for this exercise's section
@@ -190,7 +189,13 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeSettings();
     closeCtxMenu();
+    closeSongDetailMenu();
     closePractice();
+    // Exit edit mode if active
+    var view = document.getElementById('exercise-view');
+    if (view && view.classList.contains('editing-exercises')) {
+      toggleEditExercises();
+    }
   }
 });
 
@@ -199,6 +204,12 @@ document.addEventListener('click', function(e) {
   const menu = document.getElementById('user-menu');
   if (menu && menu.open && !menu.contains(e.target)) {
     menu.open = false; 
+  }
+  // Close song detail dropdown on outside click
+  var sdMenu = document.getElementById('song-detail-menu');
+  var sdDropdown = document.getElementById('song-detail-dropdown');
+  if (sdDropdown && sdDropdown.classList.contains('open') && sdMenu && !sdMenu.contains(e.target)) {
+    sdDropdown.classList.remove('open');
   }
 });
 
@@ -254,5 +265,200 @@ document.addEventListener('click', function(e) {
         }
       });
     }
+
+    // Apply initial crop scales on page load
+    applyCropScales();
+    // Apply initial crop background color styling (invert for dark bg)
+    applyInitialCropBgStyles();
   });
 })();
+
+// ===== Song Detail: Three-dot menu =====
+function toggleSongDetailMenu(event) {
+  event.stopPropagation();
+  var dropdown = document.getElementById('song-detail-dropdown');
+  if (dropdown) dropdown.classList.toggle('open');
+}
+
+function closeSongDetailMenu() {
+  var dropdown = document.getElementById('song-detail-dropdown');
+  if (dropdown) dropdown.classList.remove('open');
+}
+
+// ===== Song Detail: Edit Exercises Mode =====
+function toggleEditExercises() {
+  var view = document.getElementById('exercise-view');
+  var toolbar = document.getElementById('edit-exercises-toolbar');
+  if (!view || !toolbar) return;
+
+  var editing = view.classList.toggle('editing-exercises');
+  toolbar.style.display = editing ? 'block' : 'none';
+}
+
+// ===== Crop resize: drag handle =====
+var _resizeState = null;
+
+function cropResizeStart(event, handle) {
+  event.preventDefault();
+  event.stopPropagation();
+  var card = handle.closest('.expanded-card');
+  if (!card) return;
+
+  var cropArea = card.querySelector('.card-crop-area');
+  if (!cropArea) return;
+
+  var startY = event.type === 'touchstart' ? event.touches[0].clientY : event.clientY;
+  var startHeight = cropArea.offsetHeight;
+  var currentScale = parseFloat(card.dataset.cropScale) || 100;
+
+  _resizeState = {
+    card: card,
+    cropArea: cropArea,
+    startY: startY,
+    startHeight: startHeight,
+    startScale: currentScale
+  };
+
+  document.addEventListener('mousemove', cropResizeMove);
+  document.addEventListener('mouseup', cropResizeEnd);
+  document.addEventListener('touchmove', cropResizeMove, { passive: false });
+  document.addEventListener('touchend', cropResizeEnd);
+  document.body.style.cursor = 'ns-resize';
+  document.body.style.userSelect = 'none';
+}
+
+function cropResizeMove(event) {
+  if (!_resizeState) return;
+  event.preventDefault();
+  var clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
+  var deltaY = clientY - _resizeState.startY;
+  var ratio = (_resizeState.startHeight + deltaY) / _resizeState.startHeight;
+  var newScale = Math.round(Math.max(30, Math.min(300, _resizeState.startScale * ratio)));
+
+  _resizeState.card.dataset.cropScale = newScale;
+  _resizeState.card.querySelectorAll('.card-crop-img').forEach(function(img) {
+    img.style.width = newScale + '%';
+  });
+}
+
+function cropResizeEnd() {
+  if (!_resizeState) return;
+  var card = _resizeState.card;
+  var scale = parseFloat(card.dataset.cropScale) || 100;
+
+  // Save to server
+  var songId = card.dataset.songId;
+  var exerciseId = card.dataset.exerciseId;
+  fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cropScale: scale })
+  }).catch(console.error);
+
+  _resizeState = null;
+  document.removeEventListener('mousemove', cropResizeMove);
+  document.removeEventListener('mouseup', cropResizeEnd);
+  document.removeEventListener('touchmove', cropResizeMove);
+  document.removeEventListener('touchend', cropResizeEnd);
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+}
+
+// Apply saved crop scales on page load
+function applyCropScales() {
+  document.querySelectorAll('.expanded-card[data-crop-scale]').forEach(function(card) {
+    var scale = parseFloat(card.dataset.cropScale);
+    if (!scale || scale === 100) return;
+    var imgs = card.querySelectorAll('.card-crop-img');
+    imgs.forEach(function(img) {
+      img.style.width = scale + '%';
+    });
+  });
+}
+
+// Crop background color
+function setCropBgColor(swatch, color) {
+  var toolbar = document.getElementById('edit-exercises-toolbar');
+  if (!toolbar) return;
+  var songId = toolbar.dataset.songId;
+
+  // Update active state on swatches
+  toolbar.querySelectorAll('.color-swatch').forEach(function(s) {
+    s.classList.remove('active');
+  });
+  if (swatch) swatch.classList.add('active');
+
+  // Determine if this is a dark background
+  var isDark = isColorDark(color);
+
+  // Update data attribute for persistence across page loads
+  var view = document.getElementById('exercise-view');
+  if (view) {
+    if (color) {
+      view.setAttribute('data-crop-bg-color', color);
+    } else {
+      view.removeAttribute('data-crop-bg-color');
+    }
+  }
+
+  // Apply to all crop areas
+  document.querySelectorAll('.card-crop-area').forEach(function(area) {
+    area.style.background = color || '';
+  });
+
+  // Apply invert filter for dark backgrounds so notes become white
+  document.querySelectorAll('.card-crop-img').forEach(function(img) {
+    if (isDark) {
+      img.style.filter = 'invert(1)';
+      img.style.mixBlendMode = 'difference';
+    } else {
+      img.style.filter = '';
+      img.style.mixBlendMode = '';
+    }
+  });
+
+  // Update text colors for contrast
+  document.querySelectorAll('.card-title-name').forEach(function(el) {
+    el.style.color = isDark ? '#e5e7eb' : '';
+  });
+
+  // Save to server
+  fetch('/api/songs/' + songId + '/display', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cropBgColor: color })
+  }).catch(console.error);
+}
+
+// Apply initial crop bg styles on page load (for dark backgrounds)
+function applyInitialCropBgStyles() {
+  var view = document.getElementById('exercise-view');
+  if (!view) return;
+  var bg = view.getAttribute('data-crop-bg-color');
+  if (!bg) return;
+  var isDark = isColorDark(bg);
+  if (!isDark) return;
+
+  document.querySelectorAll('.card-crop-img').forEach(function(img) {
+    img.style.filter = 'invert(1)';
+    img.style.mixBlendMode = 'difference';
+  });
+  document.querySelectorAll('.card-title-name').forEach(function(el) {
+    el.style.color = '#e5e7eb';
+  });
+}
+
+// Helper: determine if a hex color is dark
+function isColorDark(hex) {
+  if (!hex || hex.length < 4) return false;
+  hex = hex.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+  }
+  var r = parseInt(hex.substring(0, 2), 16);
+  var g = parseInt(hex.substring(2, 4), 16);
+  var b = parseInt(hex.substring(4, 6), 16);
+  // Perceived luminance
+  var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum < 0.5;
+}
