@@ -27,6 +27,7 @@
       {{range .SectionGroups}}
         {{if .Label}}
         <button class="section-pill"
+                data-section-id="{{.Section.ID}}"
                 {{if eq (len .Exercises) 0}}disabled{{end}}
                 style="background:{{stageTint .LowestStage | safeCSS}};border-color:{{stageBorder .LowestStage | safeCSS}};color:{{stageColor .LowestStage | safeCSS}}"
                 onclick="document.getElementById('section-{{.Section.ID}}')?.scrollIntoView({behavior:'smooth',block:'start'})"
@@ -66,6 +67,7 @@
           <div class="expanded-card" id="card-{{.ID}}"
                style="background:{{stageTint .Stage | safeCSS}};border-color:{{stageBorder .Stage | safeCSS}}"
                data-song-id="{{$.Song.ID}}" data-exercise-id="{{.ID}}"
+               data-section-id="{{.SectionID}}"
                data-stage="{{.Stage}}"
                data-total-seconds="{{.TotalPracticedSeconds}}" data-total-reps="{{.TotalReps}}">
             <!-- Card Content -->

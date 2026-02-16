@@ -92,27 +92,6 @@ func (d *Deps) HandleSongsListPartial(w http.ResponseWriter, r *http.Request) {
 func buildRows(summaries []models.SongSummary) []SongRow {
 	var rows []SongRow
 
-	// Needs Work: lowestStage < 5
-	var needsWork []models.SongSummary
-	for _, s := range summaries {
-		if s.LowestStage != nil && *s.LowestStage < 5 {
-			needsWork = append(needsWork, s)
-		}
-	}
-	sort.Slice(needsWork, func(i, j int) bool {
-		si, sj := 99, 99
-		if needsWork[i].LowestStage != nil {
-			si = *needsWork[i].LowestStage
-		}
-		if needsWork[j].LowestStage != nil {
-			sj = *needsWork[j].LowestStage
-		}
-		return si < sj
-	})
-	if len(needsWork) > 0 {
-		rows = append(rows, SongRow{Title: "Needs Work", Songs: needsWork})
-	}
-
 	// Recently Practiced
 	var recent []models.SongSummary
 	for _, s := range summaries {
@@ -125,16 +104,6 @@ func buildRows(summaries []models.SongSummary) []SongRow {
 	})
 	if len(recent) > 0 {
 		rows = append(rows, SongRow{Title: "Recently Practiced", Songs: recent})
-	}
-
-	// All Songs A-Z
-	allAlpha := make([]models.SongSummary, len(summaries))
-	copy(allAlpha, summaries)
-	sort.Slice(allAlpha, func(i, j int) bool {
-		return strings.ToLower(allAlpha[i].Title) < strings.ToLower(allAlpha[j].Title)
-	})
-	if len(allAlpha) > 0 {
-		rows = append(rows, SongRow{Title: "All Songs (A–Z)", Songs: allAlpha})
 	}
 
 	return rows

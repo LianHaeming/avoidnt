@@ -6,7 +6,7 @@
   <!-- Three-column layout -->
   <div class="designer-columns">
     <!-- ===== LEFT SIDEBAR ===== -->
-    <div class="col-left">
+    <div class="col-left" id="col-left">
       {{if eq .Mode "edit"}}
         <div class="col-left-header">
           <a class="back-link" href="/songs/{{.SongID}}">← Back to song</a>
@@ -83,6 +83,9 @@
       </div>
     </div>
 
+    <!-- Left resize handle -->
+    <div class="col-resize-handle" id="resize-left" data-side="left"></div>
+
     <!-- ===== CENTER: PDF VIEWER ===== -->
     <div class="col-center">
       <!-- Upload zone (shown when no PDF) -->
@@ -128,8 +131,11 @@
       <div class="hint" id="pd-crop-hint" style="display:none">Click and drag on the PDF to select a section</div>
     </div>
 
+    <!-- Right resize handle -->
+    <div class="col-resize-handle" id="resize-right" data-side="right"></div>
+
     <!-- ===== RIGHT SIDEBAR ===== -->
-    <div class="col-right">
+    <div class="col-right" id="col-right">
       <div class="right-sidebar-content">
         <div class="right-sidebar-header">
           <h4 class="right-sidebar-title">Exercises</h4>

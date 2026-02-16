@@ -99,14 +99,15 @@
     exercises = (song.exercises || [])
       .filter(ex => ex.crops && ex.crops.length > 0)
       .map(ex => {
-        const crop = ex.crops[0];
         return {
           id: ex.id,
-          cropId: crop.id,
-          pageIndex: crop.pageIndex,
-          rect: { ...crop.rect },
-          previewDataUrl: null,
-          previewBase64: null,
+          crops: ex.crops.map(crop => ({
+            cropId: crop.id,
+            pageIndex: crop.pageIndex,
+            rect: { ...crop.rect },
+            previewDataUrl: null,
+            previewBase64: null
+          })),
           sequenceNumber: seq++,
           description: ex.name || '',
           sectionId: ex.sectionId,
@@ -122,7 +123,9 @@
     if (jobId && pageCount > 0) {
       loadPageImages(jobId, pageCount);
       exercises.forEach(card => {
-        loadCropPreview(songId, card);
+        card.crops.forEach(crop => {
+          loadCropPreview(songId, card, crop);
+        });
       });
     }
     updateAutoFillBtn();
@@ -190,38 +193,40 @@
     container.querySelectorAll('.crop-overlay').forEach(el => el.remove());
 
     exercises.forEach(ex => {
-      if (ex.pageIndex !== pageIndex) return;
-      const overlay = document.createElement('div');
-      overlay.className = 'crop-overlay';
-      if (ex.id === selectedExerciseId) overlay.classList.add('selected');
-      if (ex.isComplete) overlay.classList.add('complete');
-      overlay.style.left = (ex.rect.x * 100) + '%';
-      overlay.style.top = (ex.rect.y * 100) + '%';
-      overlay.style.width = (ex.rect.w * 100) + '%';
-      overlay.style.height = (ex.rect.h * 100) + '%';
-      overlay.onclick = (e) => {
-        e.stopPropagation();
-        selectExercise(ex.id);
-      };
-      overlay.onpointerdown = (e) => e.stopPropagation();
+      ex.crops.forEach(crop => {
+        if (crop.pageIndex !== pageIndex) return;
+        const overlay = document.createElement('div');
+        overlay.className = 'crop-overlay';
+        if (ex.id === selectedExerciseId) overlay.classList.add('selected');
+        if (ex.isComplete) overlay.classList.add('complete');
+        overlay.style.left = (crop.rect.x * 100) + '%';
+        overlay.style.top = (crop.rect.y * 100) + '%';
+        overlay.style.width = (crop.rect.w * 100) + '%';
+        overlay.style.height = (crop.rect.h * 100) + '%';
+        overlay.onclick = (e) => {
+          e.stopPropagation();
+          selectExercise(ex.id);
+        };
+        overlay.onpointerdown = (e) => e.stopPropagation();
 
-      const badge = document.createElement('span');
-      badge.className = 'overlay-badge';
-      badge.textContent = ex.sequenceNumber;
-      overlay.appendChild(badge);
+        const badge = document.createElement('span');
+        badge.className = 'overlay-badge';
+        badge.textContent = ex.sequenceNumber;
+        overlay.appendChild(badge);
 
-      container.appendChild(overlay);
+        container.appendChild(overlay);
+      });
     });
   }
 
-  function loadCropPreview(sId, card) {
-    fetch('/api/songs/' + sId + '/preview/' + card.cropId)
+  function loadCropPreview(sId, card, crop) {
+    fetch('/api/songs/' + sId + '/preview/' + crop.cropId)
       .then(res => {
         if (!res.ok) throw new Error();
         return res.blob();
       })
       .then(blob => {
-        card.previewDataUrl = URL.createObjectURL(blob);
+        crop.previewDataUrl = URL.createObjectURL(blob);
         renderExercises();
       })
       .catch(() => {});
@@ -306,7 +311,7 @@
     const selBottom = selTop + selH;
 
     const pageImages = pagesScroll.querySelectorAll('.page-image');
-    let bestCrop = null;
+    var hitCrops = [];
 
     pageImages.forEach((img, idx) => {
       if (!img.complete || img.naturalWidth === 0) return;
@@ -336,8 +341,8 @@
       const sw = Math.floor(clipW * scaleX);
       const sh = Math.floor(clipH * scaleY);
 
-      if (sw > 0 && sh > 0 && !bestCrop) {
-        bestCrop = {
+      if (sw > 0 && sh > 0) {
+        hitCrops.push({
           pageIndex, img, sx, sy, sw, sh,
           rect: {
             x: sx / img.naturalWidth,
@@ -345,28 +350,64 @@
             w: sw / img.naturalWidth,
             h: sh / img.naturalHeight
           }
-        };
+        });
       }
     });
 
-    if (!bestCrop) { clearSelection(); return; }
+    // Limit to 2 consecutive pages
+    if (hitCrops.length === 0) { clearSelection(); return; }
+    hitCrops.sort((a, b) => a.pageIndex - b.pageIndex);
+    if (hitCrops.length > 2) hitCrops = hitCrops.slice(0, 2);
+    if (hitCrops.length === 2 && hitCrops[1].pageIndex - hitCrops[0].pageIndex !== 1) {
+      hitCrops = [hitCrops[0]];
+    }
 
-    const { img, sx, sy, sw, sh, rect, pageIndex } = bestCrop;
-    const canvas = document.createElement('canvas');
-    canvas.width = sw; canvas.height = sh;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { clearSelection(); return; }
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-    const previewDataUrl = canvas.toDataURL('image/jpeg');
-    const previewBase64 = previewDataUrl.split(',')[1];
+    // Build combined preview by stitching crop canvases vertically
+    var canvases = [];
+    var totalH = 0;
+    var maxW = 0;
+    for (var i = 0; i < hitCrops.length; i++) {
+      var c = hitCrops[i];
+      var cvs = document.createElement('canvas');
+      cvs.width = c.sw; cvs.height = c.sh;
+      var cx = cvs.getContext('2d');
+      if (!cx) { clearSelection(); return; }
+      cx.drawImage(c.img, c.sx, c.sy, c.sw, c.sh, 0, 0, c.sw, c.sh);
+      canvases.push(cvs);
+      totalH += c.sh;
+      if (c.sw > maxW) maxW = c.sw;
+    }
+
+    var combinedCanvas = document.createElement('canvas');
+    combinedCanvas.width = maxW;
+    combinedCanvas.height = totalH;
+    var combinedCtx = combinedCanvas.getContext('2d');
+    if (!combinedCtx) { clearSelection(); return; }
+    var yOff = 0;
+    for (var j = 0; j < canvases.length; j++) {
+      combinedCtx.drawImage(canvases[j], 0, yOff);
+      yOff += canvases[j].height;
+    }
+    var previewDataUrl = combinedCanvas.toDataURL('image/jpeg');
+
+    // Build crops array
+    var newCrops = hitCrops.map(function(c, ci) {
+      // Per-crop preview: first crop gets the combined preview for the card thumbnail
+      var cropCanvas = canvases[ci];
+      var cropDataUrl = cropCanvas.toDataURL('image/jpeg');
+      return {
+        cropId: generateUuid(),
+        pageIndex: c.pageIndex,
+        rect: c.rect,
+        previewDataUrl: cropDataUrl,
+        previewBase64: cropDataUrl.split(',')[1]
+      };
+    });
 
     const newCard = {
       id: generateUuid(),
-      cropId: generateUuid(),
-      pageIndex,
-      rect,
-      previewDataUrl,
-      previewBase64,
+      crops: newCrops,
+      previewDataUrl: previewDataUrl,
       sequenceNumber: exercises.length + 1,
       description: '',
       sectionId: '',
@@ -524,8 +565,9 @@
       let html = '<div class="card-collapsed" onclick="pdSelectExercise(\'' + ex.id + '\')">';
       html += '<span class="drag-handle" title="Drag to reorder">⠿</span>';
       html += '<span class="card-number">#' + ex.sequenceNumber + '</span>';
-      if (ex.previewDataUrl) {
-        html += '<div class="card-thumb-small"><img src="' + ex.previewDataUrl + '" alt="Crop" /></div>';
+      var thumbUrl = ex.previewDataUrl || (ex.crops[0] && ex.crops[0].previewDataUrl);
+      if (thumbUrl) {
+        html += '<div class="card-thumb-small"><img src="' + thumbUrl + '" alt="Crop" /></div>';
       }
       html += '<span class="card-name">';
       if (label) {
@@ -547,10 +589,14 @@
       if (isExpanded) {
         html += '<div class="card-expanded" onclick="event.stopPropagation()">';
 
-        if (ex.previewDataUrl) {
+        var expandThumb = ex.previewDataUrl || (ex.crops[0] && ex.crops[0].previewDataUrl);
+        if (expandThumb) {
           html += '<div class="card-thumb-large">';
-          html += '<img src="' + ex.previewDataUrl + '" alt="Crop preview" />';
-          html += '<span class="thumb-page-label">Page ' + (ex.pageIndex + 1) + '</span>';
+          html += '<img src="' + expandThumb + '" alt="Crop preview" />';
+          var pageLabel = ex.crops.length === 1
+            ? 'Page ' + (ex.crops[0].pageIndex + 1)
+            : 'Pages ' + (ex.crops[0].pageIndex + 1) + '–' + (ex.crops[ex.crops.length - 1].pageIndex + 1);
+          html += '<span class="thumb-page-label">' + pageLabel + '</span>';
           html += '</div>';
         }
 
@@ -907,12 +953,12 @@
         sectionId: card.sectionId,
         difficulty: card.difficulty,
         stage: existing ? existing.stage : 1,
-        crops: [{
-          id: card.cropId,
-          pageIndex: card.pageIndex,
-          rect: card.rect,
-          previewBase64: card.previewBase64 || undefined
-        }],
+        crops: card.crops.map(crop => ({
+          id: crop.cropId,
+          pageIndex: crop.pageIndex,
+          rect: crop.rect,
+          previewBase64: crop.previewBase64 || undefined
+        })),
         totalPracticedSeconds: existing ? existing.totalPracticedSeconds : 0,
         totalReps: existing ? existing.totalReps : 0,
         lastPracticedAt: existing ? existing.lastPracticedAt : null,
@@ -991,6 +1037,55 @@
     if (isDirty) {
       e.preventDefault();
       e.returnValue = '';
+    }
+  });
+})();
+
+// ===== Resizable Sidebars =====
+(function() {
+  'use strict';
+  var MIN_WIDTH = 240;
+  var MAX_WIDTH = 600;
+
+  document.querySelectorAll('.col-resize-handle').forEach(function(handle) {
+    var side = handle.dataset.side; // 'left' or 'right'
+    var dragging = false;
+    var startX, startWidth, panel;
+
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      panel = side === 'left'
+        ? document.getElementById('col-left')
+        : document.getElementById('col-right');
+      if (!panel) return;
+
+      dragging = true;
+      startX = e.clientX;
+      startWidth = panel.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+
+    function onMove(e) {
+      if (!dragging) return;
+      var delta = side === 'left'
+        ? e.clientX - startX
+        : startX - e.clientX;
+      var newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta));
+      panel.style.width = newWidth + 'px';
+    }
+
+    function onUp() {
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
     }
   });
 })();

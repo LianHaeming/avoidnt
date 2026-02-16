@@ -148,12 +148,36 @@ function onStageChange(select, songId, exerciseId) {
     const colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
     const color = colors[newStage] || '#9ca3af';
     select.style.color = color;
-    card.style.background = hexToRgba(color, 0.1);
-    card.style.borderColor = hexToRgba(color, 0.35);
+    card.style.background = hexToRGBA(color, 0.1);
+    card.style.borderColor = hexToRGBA(color, 0.35);
+    card.dataset.stage = newStage;
+
+    // Update section nav pill for this exercise's section
+    updateSectionPill(card.dataset.sectionId);
   }
 }
 
-function hexToRgba(hex, alpha) {
+function updateSectionPill(sectionId) {
+  if (!sectionId) return;
+  var pill = document.querySelector('.section-pill[data-section-id="' + sectionId + '"]');
+  if (!pill) return;
+
+  // Find all exercise cards in this section and compute lowest stage
+  var cards = document.querySelectorAll('.expanded-card[data-section-id="' + sectionId + '"]');
+  var lowest = 5;
+  cards.forEach(function(c) {
+    var s = parseInt(c.dataset.stage) || 1;
+    if (s < lowest) lowest = s;
+  });
+
+  var colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
+  var color = colors[lowest] || '#9ca3af';
+  pill.style.color = color;
+  pill.style.background = hexToRGBA(color, 0.1);
+  pill.style.borderColor = hexToRGBA(color, 0.35);
+}
+
+function hexToRGBA(hex, alpha) {
   hex = hex.replace('#', '');
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
