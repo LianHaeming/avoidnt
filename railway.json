@@ -4,6 +4,8 @@
     "builder": "RAILPACK"
   },
   "deploy": {
+    "startCommand": "cd /app && ./avoidnt",
+    "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
