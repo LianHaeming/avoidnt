@@ -106,6 +106,16 @@ func buildRows(summaries []models.SongSummary) []SongRow {
 		rows = append(rows, SongRow{Title: "Recently Practiced", Songs: recent})
 	}
 
+	// All Songs — always show every song so new/unpracticed ones are visible
+	if len(summaries) > 0 {
+		all := make([]models.SongSummary, len(summaries))
+		copy(all, summaries)
+		sort.Slice(all, func(i, j int) bool {
+			return all[i].Title < all[j].Title
+		})
+		rows = append(rows, SongRow{Title: "All Songs", Songs: all})
+	}
+
 	return rows
 }
 

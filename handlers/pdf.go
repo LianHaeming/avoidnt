@@ -45,9 +45,9 @@ func convertPDF(pdfBytes []byte, outputDir string) (int, error) {
 }
 
 func convertWithMutool(mutoolPath, pdfPath, outputDir string) (int, error) {
-	// mutool convert -o output/page_%d.jpg -O resolution=144 input.pdf
-	outPattern := filepath.Join(outputDir, "page_%d.jpg")
-	cmd := exec.Command(mutoolPath, "convert", "-o", outPattern, "-O", "resolution=144", pdfPath)
+	// mutool convert -o output/page_%d.png -O resolution=288 input.pdf
+	outPattern := filepath.Join(outputDir, "page_%d.png")
+	cmd := exec.Command(mutoolPath, "convert", "-o", outPattern, "-O", "resolution=288", pdfPath)
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return 0, fmt.Errorf("mutool failed: %w", err)
@@ -57,23 +57,23 @@ func convertWithMutool(mutoolPath, pdfPath, outputDir string) (int, error) {
 }
 
 func convertWithPdftoppm(pdftoppmPath, pdfPath, outputDir string) (int, error) {
-	// pdftoppm -jpeg -r 144 input.pdf output/page
+	// pdftoppm -png -r 288 input.pdf output/page
 	prefix := filepath.Join(outputDir, "page")
-	cmd := exec.Command(pdftoppmPath, "-jpeg", "-r", "144", pdfPath, prefix)
+	cmd := exec.Command(pdftoppmPath, "-png", "-r", "288", pdfPath, prefix)
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return 0, fmt.Errorf("pdftoppm failed: %w", err)
 	}
 
-	// pdftoppm outputs page-1.jpg, page-2.jpg etc. Rename to page_1.jpg format.
+	// pdftoppm outputs page-1.png, page-2.png etc. Rename to page_1.png format.
 	entries, _ := os.ReadDir(outputDir)
 	for _, e := range entries {
 		name := e.Name()
-		if strings.HasPrefix(name, "page-") && strings.HasSuffix(name, ".jpg") {
+		if strings.HasPrefix(name, "page-") && strings.HasSuffix(name, ".png") {
 			// Extract number
 			numStr := strings.TrimPrefix(name, "page-")
-			numStr = strings.TrimSuffix(numStr, ".jpg")
-			newName := fmt.Sprintf("page_%s.jpg", numStr)
+			numStr = strings.TrimSuffix(numStr, ".png")
+			newName := fmt.Sprintf("page_%s.png", numStr)
 			os.Rename(filepath.Join(outputDir, name), filepath.Join(outputDir, newName))
 		}
 	}

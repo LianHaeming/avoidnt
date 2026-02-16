@@ -388,13 +388,13 @@
       combinedCtx.drawImage(canvases[j], 0, yOff);
       yOff += canvases[j].height;
     }
-    var previewDataUrl = combinedCanvas.toDataURL('image/jpeg');
+    var previewDataUrl = combinedCanvas.toDataURL('image/png');
 
     // Build crops array
     var newCrops = hitCrops.map(function(c, ci) {
       // Per-crop preview: first crop gets the combined preview for the card thumbnail
       var cropCanvas = canvases[ci];
-      var cropDataUrl = cropCanvas.toDataURL('image/jpeg');
+      var cropDataUrl = cropCanvas.toDataURL('image/png');
       return {
         cropId: generateUuid(),
         pageIndex: c.pageIndex,

@@ -295,6 +295,40 @@ function toggleEditExercises() {
   toolbar.style.display = editing ? 'block' : 'none';
 }
 
+// Regenerate HD previews from source pages
+function regeneratePreviews(btn) {
+  var toolbar = document.getElementById('edit-exercises-toolbar');
+  if (!toolbar) return;
+  var songId = toolbar.dataset.songId;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Regenerating...';
+
+  fetch('/api/songs/' + songId + '/regenerate-previews', { method: 'POST' })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.error) {
+        alert('Error: ' + data.error);
+        btn.textContent = '🔄 Regenerate HD Previews';
+      } else {
+        btn.textContent = '✅ Done! (' + (data.regenerated || 0) + ' crops)';
+        // Reload images by busting cache
+        document.querySelectorAll('.card-crop-img').forEach(function(img) {
+          var src = img.getAttribute('src');
+          if (src) img.src = src.split('?')[0] + '?t=' + Date.now();
+        });
+      }
+    })
+    .catch(function(err) {
+      console.error(err);
+      alert('Failed to regenerate previews');
+      btn.textContent = '🔄 Regenerate HD Previews';
+    })
+    .finally(function() {
+      btn.disabled = false;
+    });
+}
+
 // ===== Crop resize: drag handle =====
 var _resizeState = null;
 

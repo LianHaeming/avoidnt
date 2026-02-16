@@ -477,6 +477,13 @@ html, body {
 .color-custom-input::-webkit-color-swatch-wrapper { padding:0; }
 .color-custom-input::-webkit-color-swatch { border:none; border-radius:50%; }
 .edit-toolbar-hint { font-size:0.75rem; color:#9ca3af; margin:0.5rem 0 0; }
+.edit-toolbar-regen {
+  margin-top:0.5rem; padding:0.4rem 0.8rem; font-size:0.8rem; font-weight:500;
+  background:none; border:1px solid #d1d5db; border-radius:6px; color:#6b7280;
+  cursor:pointer; transition:all 0.15s;
+}
+.edit-toolbar-regen:hover { background:#f3f4f6; color:#374151; border-color:#9ca3af; }
+.edit-toolbar-regen:disabled { opacity:0.6; cursor:wait; }
 
 /* Crop resize drag handle (hidden by default, shown in edit mode) */
 .card-crop-resize-handle {
@@ -503,6 +510,8 @@ html, body {
 .dark-mode .edit-toolbar-title { color:#e5e7eb; }
 .dark-mode .edit-toolbar-label { color:#9ca3af; }
 .dark-mode .edit-toolbar-hint { color:#6b7280; }
+.dark-mode .edit-toolbar-regen { border-color:#4b5563; color:#9ca3af; }
+.dark-mode .edit-toolbar-regen:hover { background:#374151; color:#e5e7eb; border-color:#6b7280; }
 .dark-mode .color-custom-input { border-color:#4b5563; }
 .header-separator { border:none; border-top:1px solid #e5e7eb; margin:1.25rem 0; }
 .mastered-banner {
@@ -555,6 +564,7 @@ html, body {
 .card-crop-item { border-radius:6px; overflow:hidden; }
 .card-crop-img {
   width:100%; display:block; object-fit:contain;
+  image-rendering:auto;
 }
 .card-crop-placeholder {
   display:flex; align-items:center; justify-content:center;

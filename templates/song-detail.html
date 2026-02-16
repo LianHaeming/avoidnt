@@ -74,6 +74,7 @@
       </div>
     </div>
     <p class="edit-toolbar-hint">Drag the bottom edge of each exercise to resize crops.</p>
+    <button class="edit-toolbar-regen" onclick="regeneratePreviews(this)" title="Re-crop from source pages at maximum resolution">🔄 Regenerate HD Previews</button>
   </div>
 
   {{if eq (len .Song.Exercises) 0}}

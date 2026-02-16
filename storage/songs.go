@@ -146,6 +146,11 @@ func (s *SongStore) GetPreview(songID, cropID string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
+// PreviewPath returns the file path for a crop preview image.
+func (s *SongStore) PreviewPath(songID, cropID string) string {
+	return filepath.Join(s.songDir(songID), fmt.Sprintf("preview_%s.png", cropID))
+}
+
 // migrateSong handles old data format migration.
 func migrateSong(song *models.Song) {
 	if song.Structure == nil {

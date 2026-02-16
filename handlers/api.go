@@ -175,6 +175,44 @@ func (d *Deps) HandlePatchSongDisplay(w http.ResponseWriter, r *http.Request) {
 	jsonOK(w, map[string]any{"success": true})
 }
 
+// HandleRegeneratePreviews re-crops all exercise previews from source page images
+// at full resolution. This improves quality for songs created with older/lower-res settings.
+func (d *Deps) HandleRegeneratePreviews(w http.ResponseWriter, r *http.Request) {
+	songID := r.PathValue("songId")
+
+	song, err := d.Songs.Get(songID)
+	if err != nil || song == nil {
+		jsonError(w, "Song not found", http.StatusNotFound)
+		return
+	}
+
+	if song.JobID == "" {
+		jsonError(w, "Song has no source pages", http.StatusBadRequest)
+		return
+	}
+
+	regenerated := 0
+	for i := range song.Exercises {
+		for j := range song.Exercises[i].Crops {
+			crop := &song.Exercises[i].Crops[j]
+			pageNum := crop.PageIndex + 1 // pageIndex is 0-based
+			pagePath, err := d.Jobs.GetPagePath(song.JobID, pageNum)
+			if err != nil {
+				log.Printf("Skip crop %s: page %d not found: %v", crop.ID, pageNum, err)
+				continue
+			}
+
+			if err := cropAndSave(pagePath, crop.Rect, d.Songs.PreviewPath(songID, crop.ID)); err != nil {
+				log.Printf("Failed to regenerate crop %s: %v", crop.ID, err)
+				continue
+			}
+			regenerated++
+		}
+	}
+
+	jsonOK(w, map[string]any{"success": true, "regenerated": regenerated})
+}
+
 // HandlePreview serves a crop preview image.
 func (d *Deps) HandlePreview(w http.ResponseWriter, r *http.Request) {
 	songID := r.PathValue("songId")
