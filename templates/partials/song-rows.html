@@ -1,0 +1,42 @@
+{{define "song-rows-inner"}}
+{{if eq (len .Rows) 0}}
+  <div class="empty-state">
+    <div class="empty-icon">🎸</div>
+    <h3>No songs yet</h3>
+    <p>Upload a PDF to start building your practice plan.</p>
+    <button class="retry-btn" onclick="location.href='/songs/new'">Add Song</button>
+  </div>
+{{else}}
+  <div class="category-rows">
+    {{range .Rows}}
+    <div class="category-row">
+      <h2 class="row-title">{{.Title}}</h2>
+      <div class="row-scroll-container">
+        <div class="row-scroller">
+          {{range .Songs}}
+          <div class="song-card"
+               style="background:{{stageTint (deref .LowestStage) | safeCSS}};border-color:{{stageBorder (deref .LowestStage) | safeCSS}}"
+               onclick="location.href='/songs/{{.ID}}'"
+               title="{{.Title}}{{if .Artist}} — {{.Artist}}{{end}}"
+               {{if notNil .SpotifyURL}}data-spotify-url="{{derefStr .SpotifyURL}}"{{end}}>
+            <div class="card-thumbnail">
+              {{if and .JobID (gt .PageCount 0)}}
+                <img src="/api/pages/{{.JobID}}/1" alt="{{.Title}}" class="thumbnail-img" loading="lazy" />
+              {{else}}
+                <div class="thumbnail-placeholder">🎵</div>
+              {{end}}
+            </div>
+            <div class="card-info">
+              <span class="card-title">{{.Title}}</span>
+              {{if .Artist}}<span class="card-artist">{{.Artist}}</span>{{end}}
+            </div>
+            <button class="menu-trigger" onclick="event.stopPropagation();openCtxMenu(event,'{{.ID}}')" title="More options">⋮</button>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+    {{end}}
+  </div>
+{{end}}
+{{end}}

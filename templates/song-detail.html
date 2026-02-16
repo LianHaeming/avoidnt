@@ -1,0 +1,156 @@
+{{define "content"}}
+<div class="exercise-view" id="exercise-view">
+  <!-- Song Header -->
+  <header class="song-header-wrapper"{{if notNil .Song.SpotifyURL}} data-spotify-url="{{derefStr .Song.SpotifyURL}}"{{end}}>
+    <div class="song-header">
+      <!-- Album art (populated by JS from Spotify oEmbed) -->
+      <div class="song-album-art" id="song-album-art" style="display:none">
+        <img id="song-album-art-img" alt="Album art" />
+      </div>
+      <div class="song-header-left">
+        <h1 class="song-title">{{.Song.Title}}</h1>
+        <p class="song-artist">{{.Song.Artist}}</p>
+        <div class="song-meta-row">
+          {{if .Song.Tempo}}<span class="meta-chip">{{printf "%.0f" (derefFloat .Song.Tempo)}} BPM</span>{{end}}
+          {{if notNil .Song.YoutubeURL}}<a class="meta-link" href="{{derefStr .Song.YoutubeURL}}" target="_blank" rel="noopener">YouTube</a>{{end}}
+          {{if notNil .Song.SpotifyURL}}<a class="meta-link spotify" href="{{derefStr .Song.SpotifyURL}}" target="_blank" rel="noopener">Spotify</a>{{end}}
+        </div>
+      </div>
+      <div class="song-header-right">
+        <button class="edit-song-btn" onclick="location.href='/songs/{{.Song.ID}}/edit'" title="Edit in Plan Designer">&#8942;</button>
+      </div>
+    </div>
+
+    <!-- Section Nav Pills -->
+    {{if gt (len .SectionGroups) 0}}
+    <div class="section-nav">
+      {{range .SectionGroups}}
+        {{if .Label}}
+        <button class="section-pill"
+                {{if eq (len .Exercises) 0}}disabled{{end}}
+                style="background:{{stageTint .LowestStage | safeCSS}};border-color:{{stageBorder .LowestStage | safeCSS}};color:{{stageColor .LowestStage | safeCSS}}"
+                onclick="document.getElementById('section-{{.Section.ID}}')?.scrollIntoView({behavior:'smooth',block:'start'})"
+                title="{{.Label}}">
+          {{.Label}}
+        </button>
+        {{end}}
+      {{end}}
+    </div>
+    {{end}}
+  </header>
+
+  <hr class="header-separator" />
+
+  {{if eq (len .Song.Exercises) 0}}
+    <div class="empty-state">
+      <h3>No Exercises Yet</h3>
+      <p>Add exercises to get started</p>
+      <button class="cta-btn" onclick="location.href='/songs/{{.Song.ID}}/edit'">Add Exercises</button>
+    </div>
+  {{else}}
+    {{range .SectionGroups}}
+    <div class="section-group" id="section-{{.Section.ID}}">
+      {{if .Label}}
+      <div class="section-divider">
+        <span class="section-line"></span>
+        <span class="section-label">{{.Label}}</span>
+        <span class="section-line"></span>
+      </div>
+      {{end}}
+
+      {{if eq (len .Exercises) 0}}
+        <p class="section-empty">No exercises</p>
+      {{else}}
+        <div class="expanded-list">
+          {{range .Exercises}}
+          <div class="expanded-card" id="card-{{.ID}}"
+               style="background:{{stageTint .Stage | safeCSS}};border-color:{{stageBorder .Stage | safeCSS}}"
+               data-song-id="{{$.Song.ID}}" data-exercise-id="{{.ID}}"
+               data-stage="{{.Stage}}"
+               data-total-seconds="{{.TotalPracticedSeconds}}" data-total-reps="{{.TotalReps}}">
+            <!-- Card Content -->
+            <div class="expanded-content">
+              <div class="expanded-top-row">
+                <h3 class="expanded-name">{{.Name}}</h3>
+                <span class="expanded-difficulty">D{{.Difficulty}}</span>
+              </div>
+
+              <!-- Stage dropdown -->
+              <div class="expanded-stage-row">
+                <span class="stage-dropdown-label">Stage:</span>
+                <select class="stage-dropdown" aria-label="Stage"
+                        style="color:{{stageColor .Stage | safeCSS}}"
+                        onchange="onStageChange(this,'{{$.Song.ID}}','{{.ID}}')"
+                        onclick="event.stopPropagation()">
+                  {{$currentStage := .Stage}}
+                  {{range seq 5}}
+                  <option value="{{.}}" {{if eq . $currentStage}}selected{{end}}>{{index $.Settings.StageNames (sub . 1)}}</option>
+                  {{end}}
+                </select>
+              </div>
+
+              <!-- Practice controls (shown when active) -->
+              <div class="practice-controls" style="display:none">
+                <!-- Timer -->
+                <div class="inline-control-block inline-timer-block">
+                  <span class="inline-control-label">Timer</span>
+                  <div class="inline-timer-row">
+                    <button class="inline-timer-toggle" onclick="event.stopPropagation();toggleTimer(this)">Play</button>
+                    <span class="inline-timer-display">0:00</span>
+                  </div>
+                </div>
+                <!-- Reps -->
+                <div class="inline-control-block">
+                  <span class="inline-control-label">Reps</span>
+                  <div class="inline-reps-row">
+                    <span class="inline-reps-count">{{.TotalReps}}</span>
+                    <button class="inline-reps-btn" onclick="event.stopPropagation();addReps(this,1)">+1</button>
+                    <button class="inline-reps-btn" onclick="event.stopPropagation();addReps(this,5)">+5</button>
+                    <button class="inline-reps-btn" onclick="event.stopPropagation();addReps(this,10)">+10</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="expanded-stats">
+                <span class="stat-item">{{relativeTime .LastPracticedAt}}</span>
+                <span class="stat-item">{{formatDuration .TotalPracticedSeconds}}</span>
+              </div>
+            </div>
+
+            <!-- Thumbnail / Crop area -->
+            <div class="expanded-thumbnail" onclick="openPractice(this.closest('.expanded-card'))">
+              {{if and (gt (len .Crops) 0) $.Song.JobID}}
+                <img src="/api/songs/{{$.Song.ID}}/preview/{{(index .Crops 0).ID}}" alt="{{.Name}}" loading="lazy"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"  />
+                <div class="thumbnail-placeholder large" style="display:none">🎵</div>
+              {{else}}
+                <div class="thumbnail-placeholder large">🎵</div>
+              {{end}}
+
+              <!-- Expanded crops (shown when active) -->
+              <div class="inline-crop-stack" style="display:none">
+                {{range $i, $crop := .Crops}}
+                <div class="inline-crop-card">
+                  <img src="/api/songs/{{$.Song.ID}}/preview/{{$crop.ID}}" alt="crop {{add $i 1}}" class="inline-crop-image" loading="eager"
+                       onerror="this.outerHTML='<div class=\'inline-crop-placeholder\'><span>Failed to load</span></div>'" />
+                </div>
+                {{end}}
+                {{if eq (len .Crops) 0}}
+                <div class="inline-crop-empty"><p>No crops for this exercise</p></div>
+                {{end}}
+              </div>
+            </div>
+          </div>
+          {{end}}
+        </div>
+      {{end}}
+    </div>
+    {{end}}
+  {{end}}
+
+  <!-- Practice backdrop -->
+  <div id="practice-backdrop" class="practice-backdrop" style="display:none" onclick="closePractice()"></div>
+</div>
+
+<script src="/static/js/timer.js"></script>
+{{end}}

@@ -1,0 +1,45 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guitar Practice Buddy</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+  <script src="/static/js/htmx.min.js"></script>
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <div id="app-shell" class="shell-container{{if eq .Settings.Theme "dark"}} dark-mode{{end}}">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <h1 class="app-title" onclick="location.href='/songs'" title="Go to home">Guitar Practice Buddy</h1>
+      </div>
+      <div class="header-right">
+        <details class="user-menu" id="user-menu">
+          <summary class="icon-btn" title="Account">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M20 21a8 8 0 0 0-16 0" />
+            </svg>
+          </summary>
+          <div class="dropdown-menu">
+            <button class="dropdown-item" onclick="openSettings()">
+              <span class="dropdown-icon">⚙️</span> Settings
+            </button>
+          </div>
+        </details>
+      </div>
+    </header>
+
+    <main class="shell-content">
+      {{template "content" .}}
+    </main>
+
+    <!-- Settings Modal -->
+    {{template "settings-modal" .}}
+  </div>
+</body>
+</html>
+{{end}}

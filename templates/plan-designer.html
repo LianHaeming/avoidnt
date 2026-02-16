@@ -1,0 +1,167 @@
+{{define "content"}}
+<div class="designer-view" id="plan-designer"
+     data-mode="{{.Mode}}" data-song-id="{{.SongID}}"
+     {{if .Song}}data-song="{{json .Song}}"{{end}}>
+
+  <!-- Three-column layout -->
+  <div class="designer-columns">
+    <!-- ===== LEFT SIDEBAR ===== -->
+    <div class="col-left">
+      {{if eq .Mode "edit"}}
+        <div class="col-left-header">
+          <a class="back-link" href="/songs/{{.SongID}}">← Back to song</a>
+        </div>
+      {{end}}
+
+      <div class="sidebar-content">
+        <!-- Auto-fill with AI -->
+        <div class="auto-fill-section" id="pd-autofill-section">
+          <button class="auto-fill-btn" id="pd-autofill-btn" onclick="pdAutoFill()" disabled>
+            ✨ Auto-fill with AI
+          </button>
+          <span class="auto-fill-error" id="pd-analyze-error" style="display:none"></span>
+        </div>
+
+        <!-- Song Info -->
+        <div class="form-section">
+          <h4 class="form-section-title">Song Info</h4>
+
+          <div class="form-group">
+            <label class="form-label" for="pd-title">Title <span class="required">*</span></label>
+            <input id="pd-title" type="text" class="form-input title-input" placeholder="Song title" maxlength="200" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="pd-artist">Artist <span class="required">*</span></label>
+            <input id="pd-artist" type="text" class="form-input" placeholder="Artist" maxlength="200" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="pd-tempo">Tempo (BPM) <span class="required">*</span></label>
+            <input id="pd-tempo" type="number" class="form-input tempo-input" placeholder="BPM" min="20" max="300" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="pd-youtube">
+              YouTube Link <span class="optional-tag">optional</span>
+            </label>
+            <input id="pd-youtube" type="url" class="form-input" placeholder="YouTube URL" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="pd-spotify">
+              Spotify Link <span class="optional-tag">optional</span>
+            </label>
+            <input id="pd-spotify" type="url" class="form-input" placeholder="Spotify URL" />
+          </div>
+        </div>
+
+        <!-- Structure -->
+        <div class="form-section">
+          <h4 class="form-section-title">Structure <span class="required">*</span></h4>
+
+          <div class="quick-add-row">
+            <button class="quick-add-btn" onclick="pdAddSection('intro')">Intro</button>
+            <button class="quick-add-btn" onclick="pdAddSection('verse')">Verse</button>
+            <button class="quick-add-btn" onclick="pdAddSection('chorus')">Chorus</button>
+            <button class="quick-add-btn" onclick="pdAddSection('bridge')">Bridge</button>
+            <button class="quick-add-btn" onclick="pdAddSection('solo')">Solo</button>
+            <button class="quick-add-btn" onclick="pdAddSection('outro')">Outro</button>
+            <button class="quick-add-btn custom-btn" id="pd-custom-toggle" onclick="pdToggleCustomInput()">+ Custom</button>
+          </div>
+
+          <div class="custom-input-row" id="pd-custom-row" style="display:none">
+            <input type="text" id="pd-custom-name" class="form-input custom-name-input" placeholder="Custom section name" maxlength="50" onkeydown="if(event.key==='Enter')pdAddCustomSection()" />
+            <button class="btn small primary" onclick="pdAddCustomSection()">Add</button>
+            <button class="btn small" onclick="pdHideCustomInput()">Cancel</button>
+          </div>
+
+          <div id="pd-structure-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CENTER: PDF VIEWER ===== -->
+    <div class="col-center">
+      <!-- Upload zone (shown when no PDF) -->
+      <div class="upload-zone" id="pd-upload-zone"
+           ondrop="pdOnDrop(event)"
+           ondragover="event.preventDefault();event.stopPropagation();this.classList.add('drag-over')"
+           ondragleave="event.preventDefault();this.classList.remove('drag-over')">
+        <div class="upload-content">
+          <div class="upload-icon">📄</div>
+          <p>Drop PDF here or click to upload</p>
+          <button class="btn" onclick="document.getElementById('pd-file-input').click()">Choose File</button>
+          <input type="file" id="pd-file-input" accept=".pdf,application/pdf" style="display:none" onchange="pdOnFileSelected(event)" />
+        </div>
+      </div>
+
+      <!-- Upload progress -->
+      <div class="upload-progress-area" id="pd-upload-progress" style="display:none">
+        <span class="spinner"></span>
+        <span>Uploading...</span>
+      </div>
+
+      <!-- Upload error -->
+      <div class="upload-error-bar" id="pd-upload-error" style="display:none">
+        <span id="pd-upload-error-msg"></span>
+        <button class="btn small" onclick="document.getElementById('pd-upload-error').style.display='none'">Dismiss</button>
+      </div>
+
+      <!-- Pages scroll area -->
+      <div class="pages-scroll" id="pd-pages" style="display:none">
+        <div class="page-stack" id="pd-pages-inner"></div>
+        <!-- Selection box overlay -->
+        <div class="selection-rect" id="pd-selection-box" style="display:none"></div>
+      </div>
+
+      <!-- Zoom controls (floating) -->
+      <div class="zoom-controls" id="pd-zoom-controls" style="display:none">
+        <button class="zoom-btn" onclick="pdZoom(-0.25)">−</button>
+        <span class="zoom-level" id="pd-zoom-label">100%</span>
+        <button class="zoom-btn" onclick="pdZoom(0.25)">+</button>
+      </div>
+
+      <!-- Hint -->
+      <div class="hint" id="pd-crop-hint" style="display:none">Click and drag on the PDF to select a section</div>
+    </div>
+
+    <!-- ===== RIGHT SIDEBAR ===== -->
+    <div class="col-right">
+      <div class="right-sidebar-content">
+        <div class="right-sidebar-header">
+          <h4 class="right-sidebar-title">Exercises</h4>
+          <span class="progress-badge" id="pd-exercise-badge" style="display:none">
+            <span id="pd-exercise-count">0 of 0</span>
+          </span>
+        </div>
+
+        <!-- Empty state -->
+        <div class="right-sidebar-empty" id="pd-exercises-empty">
+          <div class="empty-icon">✂️</div>
+          <p>No exercises yet</p>
+          <span class="empty-hint">Draw on the PDF to start</span>
+        </div>
+
+        <!-- Card list -->
+        <div class="card-list" id="pd-exercise-list" style="display:none">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="col-right-footer">
+        <span class="save-error" id="pd-save-error" style="display:none"></span>
+        <span class="save-hint" id="pd-missing-msg" style="display:none" title="">ⓘ</span>
+        <button class="save-btn" id="pd-save-btn" onclick="pdSave()" disabled>
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/plan-designer.js"></script>
+{{end}}

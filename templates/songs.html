@@ -1,0 +1,39 @@
+{{define "content"}}
+<div class="home-view">
+  <!-- Search Bar (hidden by default, shown via JS) -->
+  <div class="search-bar" id="search-bar" style="display:none">
+    <input type="text" id="search-input" class="search-input" placeholder="Search songs..."
+           hx-get="/api/songs" hx-trigger="keyup changed delay:300ms" hx-target="#song-rows"
+           hx-include="this" name="q" autocomplete="off" />
+    <button class="search-close" onclick="closeSearch()">&times;</button>
+  </div>
+
+  <!-- Song Rows Container -->
+  <div id="song-rows">
+    {{template "song-rows-inner" .}}
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="location.href='/songs/new'" title="Add Song">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fab-icon">
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+</button>
+
+<!-- Search Toggle -->
+<button class="search-fab" onclick="toggleSearch()" title="Search">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="fab-icon">
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+</button>
+
+<!-- Context Menu (positioned by JS) -->
+<div id="ctx-menu-backdrop" class="menu-backdrop" style="display:none" onclick="closeCtxMenu()"></div>
+<div id="ctx-menu" class="menu-dropdown-fixed" style="display:none">
+  <button class="menu-item" onclick="editCtxSong()">✏️ Edit</button>
+  <button class="menu-item danger" onclick="deleteCtxSong()">🗑️ Delete</button>
+</div>
+{{end}}
