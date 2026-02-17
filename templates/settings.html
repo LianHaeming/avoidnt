@@ -1,0 +1,164 @@
+{{define "content"}}
+<div class="settings-page">
+  <h1 class="settings-page-title">Settings</h1>
+
+  <!-- Profile Section -->
+  <section class="settings-card">
+    <h3 class="settings-card-title">Profile</h3>
+    <div class="settings-profile-header">
+      <div class="settings-avatar" id="avatar-preview">
+        <span class="settings-avatar-initials" id="avatar-initials">{{firstChar .Settings.DisplayName}}</span>
+      </div>
+      <div class="settings-avatar-actions">
+        <button class="settings-btn-secondary" onclick="document.getElementById('avatar-upload').click()">Upload Photo</button>
+        <input type="file" id="avatar-upload" accept="image/*" style="display:none" />
+        <span class="settings-hint">JPG, PNG. Max 2MB.</span>
+      </div>
+    </div>
+    <div class="settings-field-row">
+      <div class="settings-field settings-field-half">
+        <label class="settings-field-label" for="display-name">Display Name</label>
+        <input type="text" id="display-name" class="settings-field-input" value="{{.Settings.DisplayName}}" maxlength="30"
+               oninput="saveDisplayName(this); updateAvatarInitials(this.value)" />
+      </div>
+      <div class="settings-field settings-field-half">
+        <label class="settings-field-label" for="email-field">Email</label>
+        <input type="email" id="email-field" class="settings-field-input" placeholder="you@example.com" disabled
+               title="Coming soon" />
+      </div>
+    </div>
+  </section>
+
+  <!-- Appearance Section -->
+  <section class="settings-card">
+    <h3 class="settings-card-title">Appearance</h3>
+    <div class="settings-field">
+      <label class="settings-field-label">Theme</label>
+      <div class="theme-segmented">
+        <button class="theme-segment{{if eq .Settings.Theme "light"}} active{{end}}" onclick="setTheme('light')">☀️ Light</button>
+        <button class="theme-segment{{if eq .Settings.Theme "dark"}} active{{end}}" onclick="setTheme('dark')">🌙 Dark</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Practice Section -->
+  <section class="settings-card">
+    <h3 class="settings-card-title">Practice</h3>
+    <p class="settings-card-desc">Customize how practice sessions work</p>
+
+    <div class="settings-field">
+      <label class="settings-field-label">Default Timer Mode</label>
+      <div class="settings-select-row">
+        <select class="settings-field-select" disabled title="Coming soon">
+          <option selected>Count up (stopwatch)</option>
+          <option>Count down (from target)</option>
+        </select>
+        <span class="settings-badge-soon">Soon</span>
+      </div>
+    </div>
+
+    <div class="settings-field">
+      <label class="settings-field-label">Daily Practice Goal</label>
+      <div class="settings-select-row">
+        <select class="settings-field-select" disabled title="Coming soon">
+          <option>No goal</option>
+          <option>15 minutes</option>
+          <option selected>30 minutes</option>
+          <option>45 minutes</option>
+          <option>60 minutes</option>
+          <option>90 minutes</option>
+        </select>
+        <span class="settings-badge-soon">Soon</span>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <h4 class="settings-card-subtitle">Stage Definitions</h4>
+    <p class="settings-card-desc">Customize the names for each practice stage</p>
+    <div class="stage-names-list">
+      {{range $i, $name := .Settings.StageNames}}
+      <div class="stage-name-row">
+        <span class="stage-dot" style="background:{{stageColor (add $i 1)}}"></span>
+        <span class="stage-label">Stage {{add $i 1}}</span>
+        <input type="text" class="stage-name-input" value="{{$name}}" maxlength="30"
+               data-stage-index="{{$i}}"
+               oninput="onStageNameInput(this)" onblur="onStageNameBlur(this)" />
+      </div>
+      {{end}}
+    </div>
+    <button class="reset-defaults-btn" onclick="resetStageNames()">Reset to defaults</button>
+  </section>
+
+  <!-- Integrations Section -->
+  <section class="settings-card">
+    <h3 class="settings-card-title">Integrations</h3>
+    <p class="settings-card-desc">Connect external services</p>
+
+    <div class="settings-integration">
+      <div class="settings-integration-icon">🎵</div>
+      <div class="settings-integration-info">
+        <span class="settings-integration-name">Spotify</span>
+        <span class="settings-integration-status">Not connected</span>
+      </div>
+      <button class="settings-btn-secondary" disabled title="Coming soon">Connect</button>
+    </div>
+
+    <div class="settings-integration">
+      <div class="settings-integration-icon">📺</div>
+      <div class="settings-integration-info">
+        <span class="settings-integration-name">YouTube</span>
+        <span class="settings-integration-status">Not connected</span>
+      </div>
+      <button class="settings-btn-secondary" disabled title="Coming soon">Connect</button>
+    </div>
+  </section>
+
+  <!-- Data Section -->
+  <section class="settings-card">
+    <h3 class="settings-card-title">Data</h3>
+    <p class="settings-card-desc">Manage your practice data</p>
+
+    <div class="settings-field">
+      <div class="settings-data-row">
+        <div>
+          <span class="settings-data-label">Export Data</span>
+          <span class="settings-data-desc">Download all your songs and practice history</span>
+        </div>
+        <button class="settings-btn-secondary" disabled title="Coming soon">Export</button>
+      </div>
+    </div>
+
+    <div class="settings-field">
+      <div class="settings-data-row">
+        <div>
+          <span class="settings-data-label">Import Data</span>
+          <span class="settings-data-desc">Restore from a previous export</span>
+        </div>
+        <button class="settings-btn-secondary" disabled title="Coming soon">Import</button>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-field">
+      <div class="settings-data-row">
+        <div>
+          <span class="settings-data-label settings-danger-text">Delete All Data</span>
+          <span class="settings-data-desc">Permanently remove all songs and practice history</span>
+        </div>
+        <button class="settings-btn-danger" disabled title="Coming soon">Delete</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section class="settings-card settings-card-muted">
+    <div class="settings-about">
+      <span class="settings-about-name">Avoidnt</span>
+      <span class="settings-about-version">v1.0.0</span>
+      <span class="settings-about-tagline">A guitar practice tracker for the obsessed.</span>
+    </div>
+  </section>
+</div>
+{{end}}

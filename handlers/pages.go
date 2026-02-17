@@ -119,6 +119,18 @@ func buildRows(summaries []models.SongSummary) []SongRow {
 	return rows
 }
 
+// SettingsPageData is the template data for the settings page.
+type SettingsPageData struct {
+	Settings models.UserSettings
+}
+
+// HandleSettingsPage renders the settings page.
+func (d *Deps) HandleSettingsPage(w http.ResponseWriter, r *http.Request) {
+	settings := d.Settings.Get()
+	data := SettingsPageData{Settings: settings}
+	d.render(w, "settings.html", data)
+}
+
 func (d *Deps) render(w http.ResponseWriter, name string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := d.Templates.ExecuteTemplate(w, name, data); err != nil {

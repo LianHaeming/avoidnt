@@ -1,5 +1,10 @@
 {{define "content"}}
 <div class="home-view">
+  <!-- Welcome -->
+  <div class="home-greeting">
+    <h2 class="greeting-text">Welcome back, {{.Settings.DisplayName}}!</h2>
+  </div>
+
   <!-- Search Bar (hidden by default, shown via JS) -->
   <div class="search-bar" id="search-bar" style="display:none">
     <input type="text" id="search-input" class="search-input" placeholder="Search songs..."

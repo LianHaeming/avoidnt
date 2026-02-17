@@ -11,8 +11,9 @@ var DefaultStageNames = [5]string{
 
 // UserSettings holds user preferences.
 type UserSettings struct {
-	Theme      string   `json:"theme"`
-	StageNames []string `json:"stageNames"`
+	Theme       string   `json:"theme"`
+	StageNames  []string `json:"stageNames"`
+	DisplayName string   `json:"displayName"`
 }
 
 // DefaultSettings returns settings with default values.
@@ -20,7 +21,8 @@ func DefaultSettings() UserSettings {
 	names := make([]string, 5)
 	copy(names, DefaultStageNames[:])
 	return UserSettings{
-		Theme:      "light",
-		StageNames: names,
+		Theme:       "light",
+		StageNames:  names,
+		DisplayName: "Lian",
 	}
 }

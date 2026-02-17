@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Avoidnt</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>" />
-  <link rel="stylesheet" href="/static/css/app.css?v=13" />
+  <link rel="stylesheet" href="/static/css/app.css?v=21" />
   <script src="/static/js/htmx.min.js"></script>
-  <script src="/static/js/app.js?v=7" defer></script>
+  <script src="/static/js/app.js?v=9" defer></script>
 </head>
 <body>
   <div id="app-shell" class="shell-container{{if eq .Settings.Theme "dark"}} dark-mode{{end}}">
@@ -18,28 +18,18 @@
         <h1 class="app-title" onclick="location.href='/songs'" title="Go to home">Avoidnt</h1>
       </div>
       <div class="header-right">
-        <details class="user-menu" id="user-menu">
-          <summary class="icon-btn" title="Account">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M20 21a8 8 0 0 0-16 0" />
-            </svg>
-          </summary>
-          <div class="dropdown-menu">
-            <button class="dropdown-item" onclick="openSettings()">
-              <span class="dropdown-icon">⚙️</span> Settings
-            </button>
-          </div>
-        </details>
+        <a href="/settings" class="icon-btn" title="Settings">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M20 21a8 8 0 0 0-16 0" />
+          </svg>
+        </a>
       </div>
     </header>
 
     <main class="shell-content">
       {{template "content" .}}
     </main>
-
-    <!-- Settings Modal -->
-    {{template "settings-modal" .}}
   </div>
 </body>
 </html>

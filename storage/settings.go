@@ -47,6 +47,9 @@ func (s *SettingsStore) Get() models.UserSettings {
 	if settings.Theme != "light" && settings.Theme != "dark" {
 		settings.Theme = "light"
 	}
+	if settings.DisplayName == "" {
+		settings.DisplayName = models.DefaultSettings().DisplayName
+	}
 
 	return settings
 }

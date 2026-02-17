@@ -1,14 +1,23 @@
-// ===== Settings Modal =====
-function openSettings() {
-  const menu = document.getElementById('user-menu');
-  if (menu) menu.open = false;
-  const modal = document.getElementById('settings-modal');
-  if (modal) modal.style.display = 'flex';
+// ===== Settings Page =====
+
+// Display name
+let _nameDebounce = null;
+function saveDisplayName(input) {
+  clearTimeout(_nameDebounce);
+  _nameDebounce = setTimeout(() => {
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName: input.value.trim() || 'Lian' })
+    }).catch(console.error);
+  }, 500);
 }
 
-function closeSettings() {
-  const modal = document.getElementById('settings-modal');
-  if (modal) modal.style.display = 'none';
+function updateAvatarInitials(name) {
+  const el = document.getElementById('avatar-initials');
+  if (!el) return;
+  const trimmed = (name || '').trim();
+  el.textContent = trimmed ? trimmed.charAt(0).toUpperCase() : '?';
 }
 
 // Theme
@@ -188,7 +197,6 @@ function hexToRGBA(hex, alpha) {
 // ===== Keyboard shortcuts =====
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    closeSettings();
     closeCtxMenu();
     closeSongDetailMenu();
     closePractice();

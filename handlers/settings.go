@@ -15,8 +15,9 @@ func (d *Deps) HandleGetSettings(w http.ResponseWriter, r *http.Request) {
 
 // UpdateSettingsRequest is the JSON body for PUT settings.
 type UpdateSettingsRequest struct {
-	Theme      *string  `json:"theme"`
-	StageNames []string `json:"stageNames"`
+	Theme       *string  `json:"theme"`
+	StageNames  []string `json:"stageNames"`
+	DisplayName *string  `json:"displayName"`
 }
 
 // HandleUpdateSettings saves settings changes.
@@ -49,6 +50,18 @@ func (d *Deps) HandleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		settings.StageNames = req.StageNames
+	}
+
+	if req.DisplayName != nil {
+		name := *req.DisplayName
+		if len(name) > 30 {
+			jsonError(w, "displayName must be at most 30 characters", http.StatusBadRequest)
+			return
+		}
+		if name == "" {
+			name = "Lian"
+		}
+		settings.DisplayName = name
 	}
 
 	if err := d.Settings.Save(settings); err != nil {

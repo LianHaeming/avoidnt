@@ -57,6 +57,12 @@ func Load() *Templates {
 		"contains":   strings.Contains,
 		"join":       strings.Join,
 		"trimSpace":  strings.TrimSpace,
+		"firstChar": func(s string) string {
+			if len(s) == 0 {
+				return "?"
+			}
+			return strings.ToUpper(string([]rune(s)[0]))
+		},
 
 		// Colors
 		"stageColor":  stageColor,
