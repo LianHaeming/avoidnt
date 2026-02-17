@@ -1440,8 +1440,8 @@ html, body {
 
 /* ===== Settings Page ===== */
 .settings-page {
-  max-width:1060px; margin:0 auto;
-  padding:2.5rem 2.5rem 4rem;
+  max-width:1400px; width:100%; margin:0 auto;
+  padding:2.5rem 4rem 4rem;
 }
 .settings-page-title {
   margin:0 0 1.75rem; font-size:1.75rem; font-weight:700;

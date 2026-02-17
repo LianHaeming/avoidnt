@@ -99,11 +99,6 @@ function closeCtxMenu() {
   _ctxSongId = null;
 }
 
-function editCtxSong() {
-  if (_ctxSongId) location.href = '/songs/' + _ctxSongId + '/edit';
-  closeCtxMenu();
-}
-
 function deleteCtxSong() {
   if (!_ctxSongId) return;
   if (!confirm('Are you sure you want to delete this song? This cannot be undone.')) {
@@ -225,16 +220,48 @@ document.addEventListener('click', function(e) {
 // ===== Spotify Album Art (oEmbed) =====
 (function() {
   const inflight = {};
+  const CACHE_KEY = 'spotify_thumb_cache';
+  const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+  function getCache() {
+    try {
+      return JSON.parse(localStorage.getItem(CACHE_KEY)) || {};
+    } catch(e) { return {}; }
+  }
+
+  function setCache(url, thumbUrl) {
+    try {
+      var cache = getCache();
+      cache[url] = { thumb: thumbUrl, ts: Date.now() };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    } catch(e) { /* quota exceeded, ignore */ }
+  }
+
+  function getCached(url) {
+    var cache = getCache();
+    var entry = cache[url];
+    if (entry && (Date.now() - entry.ts) < CACHE_TTL) {
+      return entry.thumb;
+    }
+    return null;
+  }
 
   window.fetchSpotifyThumbnail = function fetchSpotifyThumbnail(spotifyUrl) {
     if (inflight[spotifyUrl] !== undefined) return inflight[spotifyUrl];
     if (!spotifyUrl || !/^https?:\/\/(open\.)?spotify\.com\/(track|album|playlist|artist)\//.test(spotifyUrl)) {
       return Promise.resolve('');
     }
+    // Check localStorage cache first
+    var cached = getCached(spotifyUrl);
+    if (cached !== null) {
+      return Promise.resolve(cached);
+    }
     inflight[spotifyUrl] = fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(spotifyUrl))
       .then(function(res) { return res.ok ? res.json() : null; })
       .then(function(data) {
-        return (data && data.thumbnail_url) || '';
+        var thumb = (data && data.thumbnail_url) || '';
+        setCache(spotifyUrl, thumb);
+        return thumb;
       })
       .catch(function() { return ''; });
     return inflight[spotifyUrl];
