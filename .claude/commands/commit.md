@@ -1,0 +1,1 @@
+Look at all staged and unstaged changes, then create a commit with a clear, concise message. Follow conventional commit style (lowercase, imperative mood, no period). Keep the subject under 72 characters.
