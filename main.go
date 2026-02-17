@@ -70,6 +70,7 @@ func main() {
 
 	// AI analyze
 	mux.HandleFunc("POST /api/analyze-pdf", deps.HandleAnalyzePDF)
+	mux.HandleFunc("POST /api/label-exercises", deps.HandleLabelExercises)
 
 	addr := fmt.Sprintf(":%s", port)
 	log.Printf("🎸 Avoidnt listening on port %s", port)

@@ -111,7 +111,13 @@ func (d *Deps) callOpenAIVision(pageImages []string) (*AnalyzeResponse, error) {
 1. **title** – The song title
 2. **artist** – The artist / composer / band name
 3. **tempo** – The tempo in BPM (as a number).
-4. **sections** – A list of song section names visible in the sheet music.
+4. **sections** – A list of the song's structural sections visible in the sheet music (e.g., Intro, Verse, Chorus, Bridge, Solo, Outro).
+
+IMPORTANT for sections:
+- Only include sections that are part of the actual song structure / arrangement.
+- Do NOT include "variations", "alternatives", "practice exercises", or "ossia" bars that often appear at the bottom of a page or at the end of the sheet. These are supplementary practice material, not song sections.
+- Look for clear section labels, rehearsal marks, or double barlines that indicate structural divisions.
+- If the same section type appears multiple times (e.g., Verse 1, Verse 2), just include the base name once (e.g., "Verse").
 
 Return ONLY valid JSON in this exact format:
 {

@@ -1002,6 +1002,9 @@ html, body {
 .auto-fill-error {
   display:block; margin-top:6px; font-size:0.75rem; color:#dc2626;
 }
+.auto-fill-info {
+  display:block; margin-top:6px; font-size:0.75rem; color:#6b7280;
+}
 
 /* Center Column: PDF */
 .col-center {
@@ -1329,6 +1332,7 @@ html, body {
   background:linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%);
 }
 .dark-mode .auto-fill-error { color:#ff6961; }
+.dark-mode .auto-fill-info { color:#9ca3af; }
 .dark-mode .save-btn { background:#1e1e20; border-color:#2a2a2c; color:#f5f5f7; }
 .dark-mode .save-btn:hover:not(:disabled) { background:#2a2a2c; border-color:#48484a; }
 .dark-mode .exercise-card { background:#141416; border-color:#2a2a2c; }

@@ -1175,61 +1175,145 @@
     }
   }
 
-  // ===== AI Auto-fill =====
+  // ===== AI Auto-fill (unified: metadata + exercise labeling) =====
   window.pdAutoFill = async function() {
     if (!jobId || pageCount === 0) return;
-    const btn = document.getElementById('pd-autofill-btn');
-    const errEl = document.getElementById('pd-analyze-error');
+    var btn = document.getElementById('pd-autofill-btn');
+    var errEl = document.getElementById('pd-analyze-error');
+    var infoEl = document.getElementById('pd-autofill-info');
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-small"></span> Analyzing\u2026'; }
     if (errEl) errEl.style.display = 'none';
+    if (infoEl) infoEl.style.display = 'none';
 
     try {
-      const pageImages = [];
-      const limit = Math.min(pageCount, 4);
-      const imgs = pagesInner ? pagesInner.querySelectorAll('.page-image') : [];
+      // 1. Collect page images as JPEG data URLs (up to 10 pages)
+      var pageImages = [];
+      var imgs = pagesInner ? pagesInner.querySelectorAll('.page-image') : [];
+      var maxPages = Math.min(imgs.length, 10);
 
-      for (let i = 0; i < limit && i < imgs.length; i++) {
-        const img = imgs[i];
+      for (var i = 0; i < maxPages; i++) {
+        var img = imgs[i];
         if (!img.complete || img.naturalWidth === 0) continue;
-        const canvas = document.createElement('canvas');
+        var canvas = document.createElement('canvas');
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
+        var ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         pageImages.push(canvas.toDataURL('image/jpeg', 0.8));
       }
 
       if (pageImages.length === 0) throw new Error('No page images available');
 
-      const res = await fetch('/api/analyze-pdf', {
+      // 2. Extract song metadata (title, artist, tempo, sections)
+      var metadataRes = await fetch('/api/analyze-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pageImages })
+        body: JSON.stringify({ pageImages: pageImages })
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.message || 'Analysis failed (' + res.status + ')');
+      if (!metadataRes.ok) {
+        var metaBody = await metadataRes.json().catch(function() { return null; });
+        throw new Error((metaBody && metaBody.error) || 'Analysis failed (' + metadataRes.status + ')');
       }
 
-      const result = await res.json();
+      var metadata = await metadataRes.json();
 
-      if (result.title && !songTitle.trim()) { songTitle = result.title; }
-      if (result.artist && !artist.trim()) { artist = result.artist; }
-      if (result.tempo !== null && result.tempo !== undefined && tempo === null) { tempo = result.tempo; }
+      // Apply metadata (only fill empty fields)
+      if (metadata.title && !songTitle.trim()) { songTitle = metadata.title; }
+      if (metadata.artist && !artist.trim()) { artist = metadata.artist; }
+      if (metadata.tempo !== null && metadata.tempo !== undefined && tempo === null) { tempo = metadata.tempo; }
       renderHeader();
 
-      if (result.sections && result.sections.length > 0 && structure.length === 0) {
-        structure = result.sections.map((name, i) => ({
-          id: generateUuid(),
-          type: name.toLowerCase().replace(/\s*\d+\s*$/, '').trim(),
-          order: i
-        }));
+      if (metadata.sections && metadata.sections.length > 0 && structure.length === 0) {
+        structure = metadata.sections.map(function(name, i) {
+          return {
+            id: generateUuid(),
+            type: name.toLowerCase().replace(/\s*\d+\s*$/, '').trim(),
+            order: i
+          };
+        });
         renderSectionPills();
       }
 
       isDirty = true;
       updateSaveState();
+
+      // 3. If exercises exist, chain into exercise labeling
+      if (exercises.length > 0 && structure.length > 0) {
+        if (btn) { btn.innerHTML = '<span class="spinner-small"></span> Labeling exercises\u2026'; }
+
+        var exerciseInputs = exercises.map(function(ex) {
+          return {
+            id: ex.id,
+            crops: ex.crops.map(function(c) {
+              return { pageIndex: c.pageIndex, rect: c.rect };
+            }),
+            currentName: ex.description || '',
+            currentSectionId: ex.sectionId || '',
+            currentDifficulty: ex.difficulty || 0
+          };
+        });
+
+        var labelResp = await fetch('/api/label-exercises', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            songTitle: songTitle || '',
+            artist: artist || '',
+            pageImages: pageImages,
+            sections: structure.map(function(s) { return { id: s.id, type: s.type, order: s.order }; }),
+            exercises: exerciseInputs
+          })
+        });
+
+        if (labelResp.ok) {
+          var labelResult = await labelResp.json();
+          var appliedCount = 0;
+
+          (labelResult.exercises || []).forEach(function(labelEx) {
+            if (labelEx.confidence === 'low') return;
+
+            var ex = exercises.find(function(e) { return e.id === labelEx.id; });
+            if (!ex) return;
+
+            if (labelEx.name && !ex.description) {
+              ex.description = labelEx.name;
+              appliedCount++;
+            }
+
+            if (labelEx.sectionId && !ex.sectionId) {
+              if (structure.some(function(s) { return s.id === labelEx.sectionId; })) {
+                ex.sectionId = labelEx.sectionId;
+                appliedCount++;
+              }
+            }
+
+            updateCompleteness(ex);
+          });
+
+          // Handle suggested sections
+          if (labelResult.suggestedSections && labelResult.suggestedSections.length > 0) {
+            var existingTypes = {};
+            structure.forEach(function(s) { existingTypes[s.type.toLowerCase()] = true; });
+            var newSuggestions = labelResult.suggestedSections.filter(function(s) {
+              return !existingTypes[s.toLowerCase()];
+            });
+            if (newSuggestions.length > 0 && infoEl) {
+              infoEl.textContent = 'Tip: AI also detected these sections: ' + newSuggestions.join(', ') + '. Add them using the + button above.';
+              infoEl.style.display = 'block';
+            }
+          }
+
+          if (appliedCount > 0) {
+            renderExercises();
+            renderSectionPills();
+            refreshAllCropOverlays();
+            updateSaveState();
+          }
+        }
+        // If label call fails, we still got the metadata — don't throw
+      }
+
     } catch(err) {
       if (errEl) { errEl.textContent = err.message; errEl.style.display = 'block'; }
     } finally {
@@ -1239,8 +1323,8 @@
   };
 
   function updateAutoFillBtn() {
-    const btn = document.getElementById('pd-autofill-btn');
-    const section = document.getElementById('pd-autofill-section');
+    var btn = document.getElementById('pd-autofill-btn');
+    var section = document.getElementById('pd-autofill-section');
     if (btn) btn.disabled = !(jobId && pageCount > 0);
     if (section) section.style.display = (jobId && pageCount > 0) ? '' : 'none';
   }

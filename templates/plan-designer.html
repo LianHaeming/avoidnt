@@ -115,12 +115,13 @@
           <button class="quick-add-btn pd-popover-done" onclick="pdClosePopover()">Done</button>
         </div>
 
-        <!-- Auto-fill with AI -->
+        <!-- Auto-fill with AI (metadata + exercise labeling in one click) -->
         <div class="auto-fill-section" id="pd-autofill-section" style="display:none">
           <button class="auto-fill-btn" id="pd-autofill-btn" onclick="pdAutoFill()" disabled>
             &#10024; Auto-fill with AI
           </button>
           <span class="auto-fill-error" id="pd-analyze-error" style="display:none"></span>
+          <span class="auto-fill-info" id="pd-autofill-info" style="display:none"></span>
         </div>
 
         <hr class="header-separator" />
@@ -179,5 +180,5 @@
   </div>
 </div>
 
-<script src="/static/js/plan-designer.js?v=6"></script>
+<script src="/static/js/plan-designer.js?v=8"></script>
 {{end}}
