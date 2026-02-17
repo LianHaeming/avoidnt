@@ -1,93 +1,13 @@
 {{define "content"}}
 <div class="designer-view" id="plan-designer"
      data-mode="{{.Mode}}" data-song-id="{{.SongID}}"
-     {{if .Song}}data-song="{{json .Song}}"{{end}}>
+     {{if .Song}}data-song="{{json .Song}}"{{end}}
+     data-stage-names="{{json .Settings.StageNames}}">
 
-  <!-- Three-column layout -->
-  <div class="designer-columns">
-    <!-- ===== LEFT SIDEBAR ===== -->
-    <div class="col-left" id="col-left">
-      {{if eq .Mode "edit"}}
-        <div class="col-left-header">
-          <a class="back-link" href="/songs/{{.SongID}}">← Back to song</a>
-        </div>
-      {{end}}
-
-      <div class="sidebar-content">
-        <!-- Auto-fill with AI -->
-        <div class="auto-fill-section" id="pd-autofill-section">
-          <button class="auto-fill-btn" id="pd-autofill-btn" onclick="pdAutoFill()" disabled>
-            ✨ Auto-fill with AI
-          </button>
-          <span class="auto-fill-error" id="pd-analyze-error" style="display:none"></span>
-        </div>
-
-        <!-- Song Info -->
-        <div class="form-section">
-          <h4 class="form-section-title">Song Info</h4>
-
-          <div class="form-group">
-            <label class="form-label" for="pd-title">Title <span class="required">*</span></label>
-            <input id="pd-title" type="text" class="form-input title-input" placeholder="Song title" maxlength="200" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="pd-artist">Artist <span class="required">*</span></label>
-            <input id="pd-artist" type="text" class="form-input" placeholder="Artist" maxlength="200" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="pd-tempo">Tempo (BPM) <span class="required">*</span></label>
-            <input id="pd-tempo" type="number" class="form-input tempo-input" placeholder="BPM" min="20" max="300" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="pd-youtube">
-              YouTube Link <span class="optional-tag">optional</span>
-            </label>
-            <input id="pd-youtube" type="url" class="form-input" placeholder="YouTube URL" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="pd-spotify">
-              Spotify Link <span class="optional-tag">optional</span>
-            </label>
-            <input id="pd-spotify" type="url" class="form-input" placeholder="Spotify URL" />
-          </div>
-        </div>
-
-        <!-- Structure -->
-        <div class="form-section">
-          <h4 class="form-section-title">Structure <span class="required">*</span></h4>
-
-          <div class="quick-add-row">
-            <button class="quick-add-btn" onclick="pdAddSection('intro')">Intro</button>
-            <button class="quick-add-btn" onclick="pdAddSection('verse')">Verse</button>
-            <button class="quick-add-btn" onclick="pdAddSection('chorus')">Chorus</button>
-            <button class="quick-add-btn" onclick="pdAddSection('bridge')">Bridge</button>
-            <button class="quick-add-btn" onclick="pdAddSection('solo')">Solo</button>
-            <button class="quick-add-btn" onclick="pdAddSection('outro')">Outro</button>
-            <button class="quick-add-btn custom-btn" id="pd-custom-toggle" onclick="pdToggleCustomInput()">+ Custom</button>
-          </div>
-
-          <div class="custom-input-row" id="pd-custom-row" style="display:none">
-            <input type="text" id="pd-custom-name" class="form-input custom-name-input" placeholder="Custom section name" maxlength="50" onkeydown="if(event.key==='Enter')pdAddCustomSection()" />
-            <button class="btn small primary" onclick="pdAddCustomSection()">Add</button>
-            <button class="btn small" onclick="pdHideCustomInput()">Cancel</button>
-          </div>
-
-          <div id="pd-structure-list">
-            <!-- Populated by JS -->
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Left resize handle -->
-    <div class="col-resize-handle" id="resize-left" data-side="left"></div>
-
-    <!-- ===== CENTER: PDF VIEWER ===== -->
-    <div class="col-center">
+  <!-- Two-column layout -->
+  <div class="designer-two-col">
+    <!-- ===== LEFT: PDF VIEWER ===== -->
+    <div class="col-pdf" id="col-pdf">
       <!-- Upload zone (shown when no PDF) -->
       <div class="upload-zone" id="pd-upload-zone"
            ondrop="pdOnDrop(event)"
@@ -131,14 +51,101 @@
       <div class="hint" id="pd-crop-hint" style="display:none">Click and drag on the PDF to select a section</div>
     </div>
 
-    <!-- Right resize handle -->
+    <!-- Resize handle -->
     <div class="col-resize-handle" id="resize-right" data-side="right"></div>
 
-    <!-- ===== RIGHT SIDEBAR ===== -->
-    <div class="col-right" id="col-right">
-      <div class="right-sidebar-content">
-        <div class="right-sidebar-header">
-          <h4 class="right-sidebar-title">Exercises</h4>
+    <!-- ===== RIGHT: EDITOR ===== -->
+    <div class="col-editor" id="col-editor">
+      <div class="editor-scroll">
+        {{if eq .Mode "edit"}}
+          <a class="back-link" href="/songs/{{.SongID}}" style="display:block;text-align:left;margin-bottom:12px">← Back to song</a>
+        {{end}}
+
+        <!-- Song Header (WYSIWYG preview) -->
+        <header class="song-header-wrapper pd-header" id="pd-header">
+          <div class="song-header">
+            <div class="song-album-art" id="pd-album-art" style="display:none">
+              <img id="pd-album-art-img" alt="Album art" />
+            </div>
+            <div class="song-header-left">
+              <h1 class="song-title pd-editable" id="pd-title-display" onclick="pdEditField('title')">
+                <span class="pd-display-text pd-placeholder">Song title</span>
+                <span class="pd-edit-icon">&#9998;</span>
+              </h1>
+              <p class="song-artist pd-editable" id="pd-artist-display" onclick="pdEditField('artist')">
+                <span class="pd-display-text pd-placeholder">Artist</span>
+                <span class="pd-edit-icon">&#9998;</span>
+              </p>
+              <div class="song-meta-row" id="pd-meta-row">
+                <span class="meta-chip pd-editable" id="pd-tempo-display" onclick="pdEditField('tempo')">
+                  <span class="pd-display-text pd-placeholder">BPM</span>
+                  <span class="pd-edit-icon">&#9998;</span>
+                </span>
+                <span class="meta-link pd-editable" id="pd-youtube-display" onclick="pdEditField('youtube')">
+                  <span class="pd-display-text pd-placeholder">YouTube</span>
+                  <span class="pd-edit-icon">&#9998;</span>
+                </span>
+                <span class="meta-link spotify pd-editable" id="pd-spotify-display" onclick="pdEditField('spotify')">
+                  <span class="pd-display-text pd-placeholder">Spotify</span>
+                  <span class="pd-edit-icon">&#9998;</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- Section pills (WYSIWYG) -->
+        <div class="section-nav pd-section-nav" id="pd-section-pills">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Section add popover (hidden) -->
+        <div class="pd-section-popover" id="pd-section-popover" style="display:none">
+          <button class="quick-add-btn" onclick="pdAddSection('intro')">Intro</button>
+          <button class="quick-add-btn" onclick="pdAddSection('verse')">Verse</button>
+          <button class="quick-add-btn" onclick="pdAddSection('chorus')">Chorus</button>
+          <button class="quick-add-btn" onclick="pdAddSection('bridge')">Bridge</button>
+          <button class="quick-add-btn" onclick="pdAddSection('solo')">Solo</button>
+          <button class="quick-add-btn" onclick="pdAddSection('outro')">Outro</button>
+          <div class="pd-custom-row-inline" id="pd-custom-row" style="display:none">
+            <input type="text" id="pd-custom-name" class="form-input custom-name-input" placeholder="Section name" maxlength="50" onkeydown="if(event.key==='Enter')pdAddCustomSection()" />
+            <button class="btn small primary" onclick="pdAddCustomSection()">Add</button>
+          </div>
+          <button class="quick-add-btn custom-btn" id="pd-custom-toggle" onclick="pdToggleCustomInput()">+ Custom</button>
+          <button class="quick-add-btn pd-popover-done" onclick="pdClosePopover()">Done</button>
+        </div>
+
+        <!-- Auto-fill with AI -->
+        <div class="auto-fill-section" id="pd-autofill-section" style="display:none">
+          <button class="auto-fill-btn" id="pd-autofill-btn" onclick="pdAutoFill()" disabled>
+            &#10024; Auto-fill with AI
+          </button>
+          <span class="auto-fill-error" id="pd-analyze-error" style="display:none"></span>
+        </div>
+
+        <hr class="header-separator" />
+
+        <!-- Crop display controls -->
+        <div class="pd-crop-toolbar" id="pd-crop-toolbar">
+          <div class="pd-crop-toolbar-row">
+            <label class="pd-crop-toolbar-label">Background</label>
+            <div class="pd-crop-toolbar-colors">
+              <button class="color-swatch active" data-color="" style="background:#ffffff;border:1px solid #d1d5db" onclick="pdSetCropBgColor(this,'')" title="White"></button>
+              <button class="color-swatch" data-color="#1e1e1e" style="background:#1e1e1e" onclick="pdSetCropBgColor(this,'#1e1e1e')" title="Dark"></button>
+              <button class="color-swatch" data-color="#2d2b1f" style="background:#2d2b1f" onclick="pdSetCropBgColor(this,'#2d2b1f')" title="Warm Dark"></button>
+              <button class="color-swatch" data-color="#1a1f2e" style="background:#1a1f2e" onclick="pdSetCropBgColor(this,'#1a1f2e')" title="Blue Dark"></button>
+              <button class="color-swatch" data-color="#f5f0e6" style="background:#f5f0e6" onclick="pdSetCropBgColor(this,'#f5f0e6')" title="Warm"></button>
+              <button class="color-swatch" data-color="#e8e4d9" style="background:#e8e4d9" onclick="pdSetCropBgColor(this,'#e8e4d9')" title="Sepia"></button>
+              <button class="color-swatch" data-color="#d4dce6" style="background:#d4dce6" onclick="pdSetCropBgColor(this,'#d4dce6')" title="Cool"></button>
+              <input type="color" class="color-custom-input" value="#ffffff" onchange="pdSetCropBgColorCustom(this)" title="Custom color" />
+            </div>
+          </div>
+          <p class="pd-crop-toolbar-hint">Drag the bottom edge of each exercise to resize.</p>
+        </div>
+
+        <!-- Exercises header -->
+        <div class="editor-exercises-header">
+          <h4>Exercises</h4>
           <span class="progress-badge" id="pd-exercise-badge" style="display:none">
             <span id="pd-exercise-count">0 of 0</span>
           </span>
@@ -151,8 +158,8 @@
           <span class="empty-hint">Draw on the PDF to start</span>
         </div>
 
-        <!-- Card list -->
-        <div class="card-list" id="pd-exercise-list" style="display:none">
+        <!-- Exercise cards (song-detail style) -->
+        <div class="expanded-list" id="pd-exercise-list" style="display:none">
           <!-- Populated by JS -->
         </div>
       </div>
@@ -169,5 +176,5 @@
   </div>
 </div>
 
-<script src="/static/js/plan-designer.js"></script>
+<script src="/static/js/plan-designer.js?v=6"></script>
 {{end}}

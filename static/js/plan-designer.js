@@ -4,6 +4,8 @@
 
   const STANDARD_SECTIONS = ['intro', 'verse', 'chorus', 'bridge', 'solo', 'outro'];
   const DIFFICULTY_LABELS = { 1:'Easiest', 2:'Easy', 3:'Medium', 4:'Hard', 5:'Hardest' };
+  const STAGE_COLORS = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
+  const DEFAULT_STAGE_COLOR = '#9ca3af';
 
   // State
   let mode, songId, createdAt;
@@ -11,10 +13,11 @@
   let structure = [];
   let jobId = null, pageCount = 0;
   let exercises = [];
-  let selectedExerciseId = null;
   let isDirty = false, saving = false;
   let zoom = 1;
   let existingExercises = [];
+  let cropBgColor = null;
+  let stageNames = ['Stage 1','Stage 2','Stage 3','Stage 4','Stage 5'];
 
   // Crop drawing state
   let selecting = false, dragStart = null, dragCurrent = null;
@@ -33,17 +36,15 @@
     songId = root.dataset.songId;
     createdAt = new Date().toISOString();
 
+    // Parse stage names
+    if (root.dataset.stageNames) {
+      try { stageNames = JSON.parse(root.dataset.stageNames); } catch(e) {}
+    }
+
     pagesScroll = document.getElementById('pd-pages');
     pagesInner = document.getElementById('pd-pages-inner');
     uploadZone = document.getElementById('pd-upload-zone');
     selectionBoxEl = document.getElementById('pd-selection-box');
-
-    // Bind form inputs
-    bindInput('pd-title', v => { songTitle = v; isDirty = true; updateSaveState(); });
-    bindInput('pd-artist', v => { artist = v; isDirty = true; updateSaveState(); });
-    bindInput('pd-tempo', v => { tempo = v ? parseFloat(v) : null; isDirty = true; updateSaveState(); });
-    bindInput('pd-youtube', v => { youtubeUrl = v || null; isDirty = true; });
-    bindInput('pd-spotify', v => { spotifyUrl = v || null; isDirty = true; });
 
     // Load existing song in edit mode
     if (mode === 'edit' && root.dataset.song) {
@@ -62,14 +63,11 @@
       pagesScroll.addEventListener('pointerup', onPointerUp);
     }
 
+    renderHeader();
+    renderSectionPills();
     updateSaveState();
     updateExerciseUI();
     updateAutoFillBtn();
-  }
-
-  function bindInput(id, onChange) {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => onChange(el.value));
   }
 
   // ===== Load existing song =====
@@ -84,15 +82,11 @@
     pageCount = song.pageCount;
     createdAt = song.createdAt;
     existingExercises = song.exercises || [];
+    cropBgColor = song.cropBgColor || null;
 
-    // Populate form fields
-    setVal('pd-title', songTitle);
-    setVal('pd-artist', artist);
-    setVal('pd-tempo', tempo);
-    setVal('pd-youtube', youtubeUrl || '');
-    setVal('pd-spotify', spotifyUrl || '');
-
-    renderStructure();
+    renderHeader();
+    renderSectionPills();
+    renderCropToolbar();
 
     // Build exercise cards from existing
     let seq = 1;
@@ -112,6 +106,7 @@
           description: ex.name || '',
           sectionId: ex.sectionId,
           difficulty: ex.difficulty,
+          cropScale: ex.cropScale || 100,
           isComplete: !!(ex.sectionId && ex.difficulty >= 1 && ex.difficulty <= 5)
         };
       });
@@ -135,6 +130,233 @@
     const el = document.getElementById(id);
     if (el) el.value = val ?? '';
   }
+
+  // ===== WYSIWYG Header =====
+  function renderHeader() {
+    // Title
+    var titleEl = document.getElementById('pd-title-display');
+    if (titleEl && !titleEl.querySelector('.pd-inline-input')) {
+      var textEl = titleEl.querySelector('.pd-display-text');
+      if (textEl) {
+        if (songTitle) {
+          textEl.textContent = songTitle;
+          textEl.classList.remove('pd-placeholder');
+        } else {
+          textEl.textContent = 'Song title';
+          textEl.classList.add('pd-placeholder');
+        }
+      }
+    }
+
+    // Artist
+    var artistEl = document.getElementById('pd-artist-display');
+    if (artistEl && !artistEl.querySelector('.pd-inline-input')) {
+      var textEl2 = artistEl.querySelector('.pd-display-text');
+      if (textEl2) {
+        if (artist) {
+          textEl2.textContent = artist;
+          textEl2.classList.remove('pd-placeholder');
+        } else {
+          textEl2.textContent = 'Artist';
+          textEl2.classList.add('pd-placeholder');
+        }
+      }
+    }
+
+    // Tempo
+    var tempoEl = document.getElementById('pd-tempo-display');
+    if (tempoEl && !tempoEl.querySelector('.pd-inline-input')) {
+      var textEl3 = tempoEl.querySelector('.pd-display-text');
+      if (textEl3) {
+        if (tempo) {
+          textEl3.textContent = tempo + ' BPM';
+          textEl3.classList.remove('pd-placeholder');
+        } else {
+          textEl3.textContent = 'BPM';
+          textEl3.classList.add('pd-placeholder');
+        }
+      }
+    }
+
+    // YouTube
+    var ytEl = document.getElementById('pd-youtube-display');
+    if (ytEl && !ytEl.querySelector('.pd-inline-input')) {
+      var textEl4 = ytEl.querySelector('.pd-display-text');
+      if (textEl4) {
+        if (youtubeUrl) {
+          textEl4.textContent = 'YouTube';
+          textEl4.classList.remove('pd-placeholder');
+          ytEl.title = youtubeUrl;
+        } else {
+          textEl4.textContent = 'YouTube';
+          textEl4.classList.add('pd-placeholder');
+          ytEl.title = '';
+        }
+      }
+    }
+
+    // Spotify
+    var spEl = document.getElementById('pd-spotify-display');
+    if (spEl && !spEl.querySelector('.pd-inline-input')) {
+      var textEl5 = spEl.querySelector('.pd-display-text');
+      if (textEl5) {
+        if (spotifyUrl) {
+          textEl5.textContent = 'Spotify';
+          textEl5.classList.remove('pd-placeholder');
+          spEl.title = spotifyUrl;
+        } else {
+          textEl5.textContent = 'Spotify';
+          textEl5.classList.add('pd-placeholder');
+          spEl.title = '';
+        }
+      }
+    }
+
+    // Album art from Spotify
+    if (spotifyUrl && window.fetchSpotifyThumbnail) {
+      window.fetchSpotifyThumbnail(spotifyUrl).then(function(thumbUrl) {
+        var artDiv = document.getElementById('pd-album-art');
+        var artImg = document.getElementById('pd-album-art-img');
+        if (artDiv && artImg && thumbUrl) {
+          artImg.src = thumbUrl;
+          artDiv.style.display = '';
+        } else if (artDiv && !thumbUrl) {
+          artDiv.style.display = 'none';
+        }
+      });
+    } else {
+      var artDiv = document.getElementById('pd-album-art');
+      if (artDiv) artDiv.style.display = 'none';
+    }
+  }
+
+  window.pdEditField = function(field) {
+    var fieldMap = {
+      title: { elId: 'pd-title-display', type: 'text', placeholder: 'Song title', getValue: function() { return songTitle; }, setValue: function(v) { songTitle = v; } },
+      artist: { elId: 'pd-artist-display', type: 'text', placeholder: 'Artist', getValue: function() { return artist; }, setValue: function(v) { artist = v; } },
+      tempo: { elId: 'pd-tempo-display', type: 'text', placeholder: 'BPM', inputmode: 'numeric', getValue: function() { return tempo || ''; }, setValue: function(v) { tempo = v ? parseFloat(v) : null; } },
+      youtube: { elId: 'pd-youtube-display', type: 'url', placeholder: 'YouTube URL', getValue: function() { return youtubeUrl || ''; }, setValue: function(v) { youtubeUrl = v || null; } },
+      spotify: { elId: 'pd-spotify-display', type: 'url', placeholder: 'Spotify URL', getValue: function() { return spotifyUrl || ''; }, setValue: function(v) { spotifyUrl = v || null; } }
+    };
+
+    var config = fieldMap[field];
+    if (!config) return;
+
+    var el = document.getElementById(config.elId);
+    if (!el || el.querySelector('.pd-inline-input')) return;
+
+    // Hide display content
+    var textEl = el.querySelector('.pd-display-text');
+    var iconEl = el.querySelector('.pd-edit-icon');
+    if (textEl) textEl.style.display = 'none';
+    if (iconEl) iconEl.style.display = 'none';
+
+    var input = document.createElement('input');
+    input.type = config.type;
+    input.className = 'pd-inline-input';
+    input.placeholder = config.placeholder;
+    input.value = config.getValue();
+    if (config.inputmode) { input.inputMode = config.inputmode; input.style.width = '80px'; }
+    el.appendChild(input);
+    input.focus();
+    input.select();
+
+    function commit() {
+      config.setValue(input.value.trim());
+      isDirty = true;
+      input.remove();
+      if (textEl) textEl.style.display = '';
+      if (iconEl) iconEl.style.display = '';
+      renderHeader();
+      updateSaveState();
+      if (field === 'spotify') renderHeader(); // re-fetch album art
+    }
+
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { input.value = config.getValue(); input.blur(); }
+    });
+
+    // Prevent parent onclick from re-triggering
+    input.addEventListener('click', function(e) { e.stopPropagation(); });
+  };
+
+  // ===== Section Pills (WYSIWYG) =====
+  function renderSectionPills() {
+    var container = document.getElementById('pd-section-pills');
+    if (!container) return;
+    container.innerHTML = '';
+
+    structure.forEach(function(sec, i) {
+      var label = getSectionLabel(sec);
+      // Compute color from exercises in this section
+      var secExercises = exercises.filter(function(ex) { return ex.sectionId === sec.id; });
+      var lowestDiff = 0;
+      secExercises.forEach(function(ex) {
+        var d = ex.difficulty || 0;
+        if (d >= 1 && d <= 5) {
+          if (lowestDiff === 0 || d < lowestDiff) lowestDiff = d;
+        }
+      });
+      var stageNum = lowestDiff || 1;
+      var color = STAGE_COLORS[stageNum] || DEFAULT_STAGE_COLOR;
+      var tint = hexToRGBA(color, 0.1);
+      var border = hexToRGBA(color, 0.35);
+
+      var wrap = document.createElement('span');
+      wrap.className = 'pd-section-pill-wrap';
+
+      var pill = document.createElement('button');
+      pill.className = 'section-pill';
+      pill.style.background = tint;
+      pill.style.borderColor = border;
+      pill.style.color = color;
+      pill.textContent = label;
+      pill.title = label;
+      pill.onclick = function() {
+        var target = document.getElementById('pd-section-' + sec.id);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
+      var removeBtn = document.createElement('button');
+      removeBtn.className = 'pd-pill-remove';
+      removeBtn.textContent = '\u00d7';
+      removeBtn.title = 'Remove ' + label;
+      removeBtn.onclick = function(e) {
+        e.stopPropagation();
+        removeSection(i);
+        renderSectionPills();
+      };
+
+      wrap.appendChild(pill);
+      wrap.appendChild(removeBtn);
+      container.appendChild(wrap);
+    });
+
+    // Add "+" pill
+    var addPill = document.createElement('button');
+    addPill.className = 'section-pill pd-add-section-pill';
+    addPill.textContent = '+';
+    addPill.title = 'Add section';
+    addPill.onclick = function(e) {
+      e.stopPropagation();
+      pdTogglePopover();
+    };
+    container.appendChild(addPill);
+  }
+
+  function pdTogglePopover() {
+    var popover = document.getElementById('pd-section-popover');
+    if (!popover) return;
+    popover.style.display = popover.style.display === 'none' ? 'flex' : 'none';
+  }
+
+  window.pdClosePopover = function() {
+    var popover = document.getElementById('pd-section-popover');
+    if (popover) popover.style.display = 'none';
+    pdHideCustomInput();
+  };
 
   // ===== Page Images =====
   function loadPageImages(jId, pCount) {
@@ -197,7 +419,6 @@
         if (crop.pageIndex !== pageIndex) return;
         const overlay = document.createElement('div');
         overlay.className = 'crop-overlay';
-        if (ex.id === selectedExerciseId) overlay.classList.add('selected');
         if (ex.isComplete) overlay.classList.add('complete');
         overlay.style.left = (crop.rect.x * 100) + '%';
         overlay.style.top = (crop.rect.y * 100) + '%';
@@ -205,7 +426,7 @@
         overlay.style.height = (crop.rect.h * 100) + '%';
         overlay.onclick = (e) => {
           e.stopPropagation();
-          selectExercise(ex.id);
+          scrollToCard(ex.id);
         };
         overlay.onpointerdown = (e) => e.stopPropagation();
 
@@ -217,6 +438,20 @@
         container.appendChild(overlay);
       });
     });
+  }
+
+  function scrollToCard(id) {
+    const card = document.getElementById('card-' + id);
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Brief highlight
+      card.style.outline = '2px solid #3b82f6';
+      card.style.outlineOffset = '2px';
+      setTimeout(() => { card.style.outline = ''; card.style.outlineOffset = ''; }, 1200);
+      // Focus the title input for immediate editing
+      var titleInput = card.querySelector('.card-title-edit');
+      if (titleInput) setTimeout(function() { titleInput.focus(); }, 300);
+    }
   }
 
   function loadCropPreview(sId, card, crop) {
@@ -392,7 +627,6 @@
 
     // Build crops array
     var newCrops = hitCrops.map(function(c, ci) {
-      // Per-crop preview: first crop gets the combined preview for the card thumbnail
       var cropCanvas = canvases[ci];
       var cropDataUrl = cropCanvas.toDataURL('image/png');
       return {
@@ -411,12 +645,12 @@
       sequenceNumber: exercises.length + 1,
       description: '',
       sectionId: '',
-      difficulty: 0,
+      difficulty: 1,
+      cropScale: 100,
       isComplete: false
     };
 
     exercises.push(newCard);
-    selectedExerciseId = newCard.id;
     isDirty = true;
     clearSelection();
 
@@ -440,7 +674,7 @@
       order: structure.length
     });
     isDirty = true;
-    renderStructure();
+    renderSectionPills();
     updateSaveState();
     updateExerciseOptions();
   };
@@ -480,55 +714,13 @@
       }
     });
     isDirty = true;
-    renderStructure();
+    renderSectionPills();
     renderExercises();
     updateSaveState();
   }
 
   function renderStructure() {
-    const containerEl = document.getElementById('pd-structure-list');
-    if (!containerEl) return;
-    containerEl.innerHTML = '';
-
-    if (structure.length === 0) {
-      containerEl.innerHTML = '<div class="structure-empty"><span>No sections added yet.</span></div>';
-      return;
-    }
-
-    const list = document.createElement('div');
-    list.className = 'structure-list';
-
-    structure.forEach((sec, i) => {
-      const row = document.createElement('div');
-      row.className = 'structure-row';
-      row.draggable = true;
-      row.ondragstart = () => { row._dragIdx = i; };
-      row.ondragover = (e) => e.preventDefault();
-      row.ondrop = (e) => {
-        e.preventDefault();
-        const items = list.querySelectorAll('.structure-row');
-        let fromI = null;
-        items.forEach(el => { if (el._dragIdx !== undefined) fromI = el._dragIdx; });
-        if (fromI !== null && fromI !== i) {
-          const moved = structure.splice(fromI, 1)[0];
-          structure.splice(i, 0, moved);
-          structure.forEach((s, idx) => s.order = idx);
-          isDirty = true;
-          renderStructure();
-          updateExerciseOptions();
-        }
-      };
-
-      const label = getSectionLabel(sec);
-      row.innerHTML =
-        '<span class="drag-handle" title="Drag to reorder">⠿</span>' +
-        '<span class="section-label-text">' + escHtml(label) + '</span>' +
-        '<button class="remove-btn" title="Remove section">✕</button>';
-      row.querySelector('.remove-btn').onclick = (e) => { e.stopPropagation(); removeSection(i); };
-      list.appendChild(row);
-    });
-
-    containerEl.appendChild(list);
+    renderSectionPills();
   }
 
   function getSectionLabel(section) {
@@ -540,10 +732,49 @@
   }
 
   // ===== Exercises =====
-  function selectExercise(id) {
-    selectedExerciseId = selectedExerciseId === id ? null : id;
-    renderExercises();
-    refreshAllCropOverlays();
+
+  function groupExercisesBySections() {
+    var groups = [];
+    // Build a group for each structure section in order
+    structure.forEach(function(sec) {
+      var secExercises = exercises.filter(function(ex) { return ex.sectionId === sec.id; });
+      // Sort by sequenceNumber
+      secExercises.sort(function(a, b) { return a.sequenceNumber - b.sequenceNumber; });
+      var lowestDiff = 0;
+      secExercises.forEach(function(ex) {
+        var d = ex.difficulty || 0;
+        if (d >= 1 && d <= 5) {
+          if (lowestDiff === 0 || d < lowestDiff) lowestDiff = d;
+        }
+      });
+      groups.push({
+        section: sec,
+        label: getSectionLabel(sec),
+        exercises: secExercises,
+        lowestStage: lowestDiff || 1
+      });
+    });
+    // Unsorted group for exercises without a section
+    var unsorted = exercises.filter(function(ex) { return !ex.sectionId; });
+    unsorted.sort(function(a, b) { return a.sequenceNumber - b.sequenceNumber; });
+    if (unsorted.length > 0) {
+      groups.push({
+        section: { id: '__unsorted', type: 'unsorted' },
+        label: 'Unsorted',
+        exercises: unsorted,
+        lowestStage: 1
+      });
+    }
+    return groups;
+  }
+
+  function hexToRGBA(hex, alpha) {
+    hex = hex.replace('#', '');
+    if (hex.length !== 6) return 'rgba(156,163,175,' + alpha + ')';
+    var r = parseInt(hex.substring(0, 2), 16);
+    var g = parseInt(hex.substring(2, 4), 16);
+    var b = parseInt(hex.substring(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
   }
 
   function renderExercises() {
@@ -551,126 +782,139 @@
     if (!list) return;
     list.innerHTML = '';
 
-    exercises.forEach((ex, i) => {
-      const card = document.createElement('div');
-      card.className = 'exercise-card';
-      card.id = 'card-' + ex.id;
-      if (ex.id === selectedExerciseId) card.classList.add('selected');
-      card.classList.add(ex.isComplete ? 'complete' : 'incomplete');
+    var groups = groupExercisesBySections();
 
-      const label = getCardLabel(ex);
-      const isExpanded = ex.id === selectedExerciseId;
+    // Render each section group
+    groups.forEach(function(g) {
+      var groupHtml = '<div class="section-group" id="pd-section-' + g.section.id + '">';
 
-      // Collapsed row
-      let html = '<div class="card-collapsed" onclick="pdSelectExercise(\'' + ex.id + '\')">';
-      html += '<span class="drag-handle" title="Drag to reorder">⠿</span>';
-      html += '<span class="card-number">#' + ex.sequenceNumber + '</span>';
-      var thumbUrl = ex.previewDataUrl || (ex.crops[0] && ex.crops[0].previewDataUrl);
-      if (thumbUrl) {
-        html += '<div class="card-thumb-small"><img src="' + thumbUrl + '" alt="Crop" /></div>';
-      }
-      html += '<span class="card-name">';
-      if (label) {
-        html += escHtml(label);
+      // Section divider
+      groupHtml += '<div class="section-divider">';
+      groupHtml += '<span class="section-line"></span>';
+      groupHtml += '<span class="section-label">' + escHtml(g.label) + '</span>';
+      groupHtml += '<span class="section-line"></span>';
+      groupHtml += '</div>';
+
+      if (g.exercises.length === 0) {
+        groupHtml += '<p class="section-empty">No exercises</p>';
       } else {
-        html += '<span class="unnamed">(no label)</span>';
-      }
-      html += '</span>';
-      html += '<span class="card-status">';
-      if (ex.isComplete) {
-        html += '<span class="status-dot-complete" title="Complete">✓</span>';
-      } else {
-        html += '<span class="status-dot-incomplete" title="Incomplete">●</span>';
-      }
-      html += '</span>';
-      html += '</div>';
-
-      // Expanded section
-      if (isExpanded) {
-        html += '<div class="card-expanded" onclick="event.stopPropagation()">';
-
-        var expandThumb = ex.previewDataUrl || (ex.crops[0] && ex.crops[0].previewDataUrl);
-        if (expandThumb) {
-          html += '<div class="card-thumb-large">';
-          html += '<img src="' + expandThumb + '" alt="Crop preview" />';
-          var pageLabel = ex.crops.length === 1
-            ? 'Page ' + (ex.crops[0].pageIndex + 1)
-            : 'Pages ' + (ex.crops[0].pageIndex + 1) + '–' + (ex.crops[ex.crops.length - 1].pageIndex + 1);
-          html += '<span class="thumb-page-label">' + pageLabel + '</span>';
-          html += '</div>';
-        }
-
-        // Section field
-        html += '<div class="field-group">';
-        html += '<label class="field-label">Section <span class="required">*</span></label>';
-        html += '<select class="field-select" onchange="pdSetSection(\'' + ex.id + '\',this.value)">';
-        html += '<option value="" disabled' + (!ex.sectionId ? ' selected' : '') + '>Select section...</option>';
-        structure.forEach(sec => {
-          const sl = getSectionLabel(sec);
-          html += '<option value="' + sec.id + '"' + (ex.sectionId === sec.id ? ' selected' : '') + '>' + escHtml(sl) + '</option>';
+        groupHtml += '<div class="expanded-list">';
+        g.exercises.forEach(function(ex) {
+          groupHtml += buildExerciseCard(ex);
         });
-        html += '</select></div>';
-
-        // Description field
-        html += '<div class="field-group">';
-        html += '<label class="field-label">Description <span class="optional-tag">optional</span></label>';
-        html += '<input type="text" class="field-input" value="' + escAttr(ex.description) + '" oninput="pdSetDesc(\'' + ex.id + '\',this.value)" placeholder="e.g., Main riff, Bar 47-48" maxlength="100" />';
-        html += '</div>';
-
-        // Difficulty picker (buttons)
-        html += '<div class="field-group">';
-        html += '<span class="field-label">Difficulty <span class="required">*</span></span>';
-        html += '<div class="difficulty-picker">';
-        for (let d = 1; d <= 5; d++) {
-          html += '<button class="difficulty-btn' + (ex.difficulty === d ? ' selected' : '') + '" onclick="pdSetDifficulty(\'' + ex.id + '\',' + d + ')" title="' + DIFFICULTY_LABELS[d] + '" type="button">' + d + '</button>';
-        }
-        html += '</div>';
-        if (ex.difficulty > 0) {
-          html += '<span class="difficulty-hint">' + DIFFICULTY_LABELS[ex.difficulty] + '</span>';
-        } else {
-          html += '<span class="difficulty-hint muted">1 = easiest, 5 = hardest</span>';
-        }
-        html += '</div>';
-
-        html += '<button class="delete-btn" onclick="event.stopPropagation();pdDeleteExercise(\'' + ex.id + '\')">Delete crop</button>';
-        html += '</div>';
+        groupHtml += '</div>';
       }
 
-      card.draggable = true;
-      card.ondragstart = (e) => { card._exDragIdx = i; if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; };
-      card.ondragover = (e) => e.preventDefault();
-      card.ondrop = (e) => {
+      groupHtml += '</div>';
+      list.insertAdjacentHTML('beforeend', groupHtml);
+    });
+
+    // Re-bind drag-and-drop on wrappers
+    list.querySelectorAll('.expanded-card-wrapper').forEach(function(wrapper) {
+      var exId = wrapper.id.replace('card-', '');
+      var idx = exercises.findIndex(function(e) { return e.id === exId; });
+      wrapper.draggable = true;
+      wrapper.ondragstart = function(e) { wrapper._exDragIdx = idx; if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; };
+      wrapper.ondragover = function(e) { e.preventDefault(); };
+      wrapper.ondrop = function(e) {
         e.preventDefault();
-        const items = list.querySelectorAll('.exercise-card');
-        let fromI = null;
-        items.forEach(el => { if (el._exDragIdx !== undefined) fromI = el._exDragIdx; });
-        if (fromI !== null && fromI !== i) {
-          const updated = [...exercises];
-          const [moved] = updated.splice(fromI, 1);
-          updated.splice(i, 0, moved);
-          updated.forEach((ex, idx) => ex.sequenceNumber = idx + 1);
+        var fromI = null;
+        list.querySelectorAll('.expanded-card-wrapper').forEach(function(el) {
+          if (el._exDragIdx !== undefined) fromI = el._exDragIdx;
+        });
+        if (fromI !== null && fromI !== idx) {
+          var updated = exercises.slice();
+          var moved = updated.splice(fromI, 1)[0];
+          updated.splice(idx, 0, moved);
+          updated.forEach(function(ex, i) { ex.sequenceNumber = i + 1; });
           exercises = updated;
           isDirty = true;
           renderExercises();
           refreshAllCropOverlays();
         }
       };
-
-      card.innerHTML = html;
-      list.appendChild(card);
     });
 
     updateExerciseUI();
   }
 
-  function getCardLabel(ex) {
-    const parts = [];
-    if (ex.sectionId) {
-      const sec = structure.find(s => s.id === ex.sectionId);
-      if (sec) parts.push(getSectionLabel(sec));
+  function buildExerciseCard(ex) {
+    var borderColor = STAGE_COLORS[ex.difficulty] || STAGE_COLORS[1] || DEFAULT_STAGE_COLOR;
+    var cardLabel = ex.description || '';
+
+    var html = '<div class="expanded-card-wrapper" id="card-' + ex.id + '">';
+
+    // The visual card
+    html += '<div class="expanded-card" style="border-left-color:' + borderColor + '">';
+    var bgStyle = cropBgColor ? ' style="background:' + escAttr(cropBgColor) + '"' : '';
+    html += '<div class="card-crop-area"' + bgStyle + '>';
+
+    // Overlay header with editable title
+    html += '<div class="card-overlay-header">';
+    html += '<input type="text" class="card-title-edit" value="' + escAttr(cardLabel) + '" ' +
+            'placeholder="e.g., Main riff, Bar 47-48" maxlength="100" ' +
+            'oninput="pdSetDesc(\'' + ex.id + '\',this.value)" />';
+    html += '</div>';
+
+    // All crop images
+    var scale = ex.cropScale || 100;
+    var imgStyle = 'width:' + scale + '%';
+    var isDark = cropBgColor && pdIsColorDark(cropBgColor);
+    if (isDark) imgStyle += ';filter:invert(1);mix-blend-mode:difference';
+
+    var hasCrops = false;
+    ex.crops.forEach(function(crop) {
+      var url = crop.previewDataUrl;
+      if (url) {
+        hasCrops = true;
+        html += '<div class="card-crop-item"><img src="' + url + '" alt="Crop" class="card-crop-img" style="' + imgStyle + '" /></div>';
+      }
+    });
+    if (!hasCrops) {
+      var thumbUrl = ex.previewDataUrl || (ex.crops[0] && ex.crops[0].previewDataUrl);
+      if (thumbUrl) {
+        html += '<div class="card-crop-item"><img src="' + thumbUrl + '" alt="Crop" class="card-crop-img" style="' + imgStyle + '" /></div>';
+      } else {
+        html += '<div class="card-crop-placeholder"><span>🎵</span></div>';
+      }
     }
-    if (ex.description && ex.description.trim()) parts.push(ex.description.trim());
-    return parts.join(' — ');
+
+    // Crop resize handle
+    html += '<div class="card-crop-resize-handle pd-resize-handle" onmousedown="pdCropResizeStart(event,this)" ontouchstart="pdCropResizeStart(event,this)">';
+    html += '<span class="resize-handle-bar"></span>';
+    html += '</div>';
+
+    html += '</div>'; // .card-crop-area
+    html += '</div>'; // .expanded-card
+
+    // Controls bar (matching song-detail style)
+    html += '<div class="card-controls-bar" onclick="event.stopPropagation()">';
+
+    // Stage select
+    var stageColor = STAGE_COLORS[ex.difficulty] || DEFAULT_STAGE_COLOR;
+    html += '<select class="card-stage-select" aria-label="Stage" style="color:' + stageColor + '" ' +
+            'onchange="pdSetDifficulty(\'' + ex.id + '\',parseInt(this.value))">';
+    for (var d = 1; d <= 5; d++) {
+      html += '<option value="' + d + '"' + (ex.difficulty === d ? ' selected' : '') + '>' + escHtml(stageNames[d - 1]) + '</option>';
+    }
+    html += '</select>';
+
+    // Section select
+    html += '<select class="card-section-select" onchange="pdSetSection(\'' + ex.id + '\',this.value)">';
+    html += '<option value="" disabled' + (!ex.sectionId ? ' selected' : '') + '>Section…</option>';
+    structure.forEach(function(sec) {
+      var sl = getSectionLabel(sec);
+      html += '<option value="' + sec.id + '"' + (ex.sectionId === sec.id ? ' selected' : '') + '>' + escHtml(sl) + '</option>';
+    });
+    html += '</select>';
+
+    // Delete button
+    html += '<button class="card-delete-btn" onclick="event.stopPropagation();pdDeleteExercise(\'' + ex.id + '\')" title="Delete exercise">✕</button>';
+
+    html += '</div>'; // .card-controls-bar
+
+    html += '</div>'; // .expanded-card-wrapper
+    return html;
   }
 
   function updateExerciseUI() {
@@ -706,12 +950,9 @@
     renderExercises();
   }
 
-  window.pdSelectExercise = function(id) { selectExercise(id); };
-
   window.pdDeleteExercise = function(id) {
     exercises = exercises.filter(e => e.id !== id);
     exercises.forEach((e, i) => e.sequenceNumber = i + 1);
-    if (selectedExerciseId === id) selectedExerciseId = null;
     isDirty = true;
     renderExercises();
     updateSaveState();
@@ -731,6 +972,7 @@
       updateCompleteness(ex);
       isDirty = true;
       renderExercises();
+      renderSectionPills();
       updateSaveState();
       refreshAllCropOverlays();
     }
@@ -743,12 +985,13 @@
       updateCompleteness(ex);
       isDirty = true;
       renderExercises();
+      renderSectionPills();
       updateSaveState();
     }
   };
 
   function updateCompleteness(ex) {
-    ex.isComplete = !!(ex.sectionId && ex.difficulty >= 1 && ex.difficulty <= 5);
+    ex.isComplete = !!(ex.sectionId && ex.difficulty >= 1);
   }
 
   function refreshAllCropOverlays() {
@@ -759,6 +1002,111 @@
       const pi = parseInt(wrapper.dataset.pageIndex || 0);
       if (container && img) renderCropOverlays(container, pi, img);
     });
+  }
+
+  // ===== Crop Display Controls =====
+
+  function pdIsColorDark(hex) {
+    if (!hex || hex.length < 4) return false;
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    var r = parseInt(hex.substring(0, 2), 16);
+    var g = parseInt(hex.substring(2, 4), 16);
+    var b = parseInt(hex.substring(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5;
+  }
+
+  function renderCropToolbar() {
+    var toolbar = document.getElementById('pd-crop-toolbar');
+    if (!toolbar) return;
+    // Update active swatch
+    toolbar.querySelectorAll('.color-swatch').forEach(function(s) {
+      var c = s.dataset.color || '';
+      s.classList.toggle('active', c === (cropBgColor || ''));
+    });
+  }
+
+  window.pdSetCropBgColor = function(swatch, color) {
+    cropBgColor = color || null;
+    isDirty = true;
+    updateSaveState();
+
+    // Update active state
+    var toolbar = document.getElementById('pd-crop-toolbar');
+    if (toolbar) {
+      toolbar.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('active'); });
+    }
+    if (swatch) swatch.classList.add('active');
+
+    // Re-render exercises with new bg
+    renderExercises();
+  };
+
+  window.pdSetCropBgColorCustom = function(input) {
+    cropBgColor = input.value || null;
+    isDirty = true;
+    updateSaveState();
+    var toolbar = document.getElementById('pd-crop-toolbar');
+    if (toolbar) {
+      toolbar.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('active'); });
+    }
+    renderExercises();
+  };
+
+  // Crop resize drag
+  var _pdResizeState = null;
+
+  window.pdCropResizeStart = function(event, handle) {
+    event.preventDefault();
+    event.stopPropagation();
+    var card = handle.closest('.expanded-card-wrapper');
+    if (!card) return;
+    var cropArea = card.querySelector('.card-crop-area');
+    if (!cropArea) return;
+
+    var exId = card.id.replace('card-', '');
+    var ex = exercises.find(function(e) { return e.id === exId; });
+    if (!ex) return;
+
+    var startY = event.type === 'touchstart' ? event.touches[0].clientY : event.clientY;
+    var startHeight = cropArea.offsetHeight;
+    var startScale = ex.cropScale || 100;
+
+    _pdResizeState = { card: card, cropArea: cropArea, ex: ex, startY: startY, startHeight: startHeight, startScale: startScale };
+
+    document.addEventListener('mousemove', pdCropResizeMove);
+    document.addEventListener('mouseup', pdCropResizeEnd);
+    document.addEventListener('touchmove', pdCropResizeMove, { passive: false });
+    document.addEventListener('touchend', pdCropResizeEnd);
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  function pdCropResizeMove(event) {
+    if (!_pdResizeState) return;
+    event.preventDefault();
+    var clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
+    var deltaY = clientY - _pdResizeState.startY;
+    var ratio = (_pdResizeState.startHeight + deltaY) / _pdResizeState.startHeight;
+    var newScale = Math.round(Math.max(30, Math.min(300, _pdResizeState.startScale * ratio)));
+
+    _pdResizeState.ex.cropScale = newScale;
+    _pdResizeState.card.querySelectorAll('.card-crop-img').forEach(function(img) {
+      img.style.width = newScale + '%';
+    });
+  }
+
+  function pdCropResizeEnd() {
+    if (!_pdResizeState) return;
+    isDirty = true;
+    updateSaveState();
+    _pdResizeState = null;
+    document.removeEventListener('mousemove', pdCropResizeMove);
+    document.removeEventListener('mouseup', pdCropResizeEnd);
+    document.removeEventListener('touchmove', pdCropResizeMove);
+    document.removeEventListener('touchend', pdCropResizeEnd);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
   }
 
   // ===== Upload =====
@@ -798,12 +1146,11 @@
       .then(data => {
         if (progressEl) progressEl.style.display = 'none';
         exercises = [];
-        selectedExerciseId = null;
         jobId = data.id;
         pageCount = data.pageCount;
         if (!songTitle) {
           songTitle = file.name.replace(/\.pdf$/i, '');
-          setVal('pd-title', songTitle);
+          renderHeader();
         }
         isDirty = true;
         loadPageImages(data.id, data.pageCount);
@@ -867,9 +1214,10 @@
 
       const result = await res.json();
 
-      if (result.title && !songTitle.trim()) { songTitle = result.title; setVal('pd-title', songTitle); }
-      if (result.artist && !artist.trim()) { artist = result.artist; setVal('pd-artist', artist); }
-      if (result.tempo !== null && result.tempo !== undefined && tempo === null) { tempo = result.tempo; setVal('pd-tempo', tempo); }
+      if (result.title && !songTitle.trim()) { songTitle = result.title; }
+      if (result.artist && !artist.trim()) { artist = result.artist; }
+      if (result.tempo !== null && result.tempo !== undefined && tempo === null) { tempo = result.tempo; }
+      renderHeader();
 
       if (result.sections && result.sections.length > 0 && structure.length === 0) {
         structure = result.sections.map((name, i) => ({
@@ -877,7 +1225,7 @@
           type: name.toLowerCase().replace(/\s*\d+\s*$/, '').trim(),
           order: i
         }));
-        renderStructure();
+        renderSectionPills();
       }
 
       isDirty = true;
@@ -910,30 +1258,13 @@
 
   // ===== Save =====
   function updateSaveState() {
-    const missing = [];
-    if (!songTitle.trim()) missing.push('song title');
-    if (!artist.trim()) missing.push('artist');
-    if (tempo === null || tempo < 20 || tempo > 300) missing.push('valid tempo');
-    if (structure.length === 0) missing.push('at least 1 section');
-    if (!jobId) missing.push('PDF upload');
-    if (exercises.length === 0) missing.push('at least 1 exercise');
-    const incomplete = exercises.filter(e => !e.isComplete).length;
-    if (incomplete > 0) missing.push(incomplete + ' exercise(s) need labels');
-
     const hintEl = document.getElementById('pd-missing-msg');
-    if (hintEl) {
-      if (missing.length > 0 && isDirty) {
-        hintEl.style.display = '';
-        hintEl.title = 'Missing: ' + missing.join(', ');
-      } else {
-        hintEl.style.display = 'none';
-      }
-    }
+    if (hintEl) hintEl.style.display = 'none';
 
     const btn = document.getElementById('pd-save-btn');
     if (btn) {
-      btn.disabled = missing.length > 0 || saving;
-      btn.title = missing.length > 0 ? 'Missing: ' + missing.join(', ') : 'Save song';
+      btn.disabled = saving;
+      btn.title = 'Save song';
     }
   }
 
@@ -959,6 +1290,7 @@
           rect: crop.rect,
           previewBase64: crop.previewBase64 || undefined
         })),
+        cropScale: card.cropScale !== 100 ? card.cropScale : undefined,
         totalPracticedSeconds: existing ? existing.totalPracticedSeconds : 0,
         totalReps: existing ? existing.totalReps : 0,
         lastPracticedAt: existing ? existing.lastPracticedAt : null,
@@ -977,6 +1309,7 @@
       pageCount: pageCount,
       structure: structure,
       exercises: songExercises,
+      cropBgColor: cropBgColor || undefined,
       createdAt: createdAt
     };
 
@@ -1041,28 +1374,24 @@
   });
 })();
 
-// ===== Resizable Sidebars =====
+// ===== Resizable Panels =====
 (function() {
   'use strict';
-  var MIN_WIDTH = 240;
-  var MAX_WIDTH = 600;
+  var MIN_WIDTH = 320;
+  var MAX_WIDTH = 1200;
 
   document.querySelectorAll('.col-resize-handle').forEach(function(handle) {
-    var side = handle.dataset.side; // 'left' or 'right'
     var dragging = false;
     var startX, startWidth, panel;
 
     handle.addEventListener('mousedown', function(e) {
       e.preventDefault();
-      panel = side === 'left'
-        ? document.getElementById('col-left')
-        : document.getElementById('col-right');
+      panel = document.getElementById('col-editor');
       if (!panel) return;
 
       dragging = true;
       startX = e.clientX;
       startWidth = panel.getBoundingClientRect().width;
-      handle.classList.add('dragging');
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
 
@@ -1070,18 +1399,24 @@
       document.addEventListener('mouseup', onUp);
     });
 
+    handle.addEventListener('dblclick', function(e) {
+      e.preventDefault();
+      panel = document.getElementById('col-editor');
+      if (!panel) return;
+      var halfWidth = Math.round(window.innerWidth * 0.5);
+      halfWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, halfWidth));
+      panel.style.width = halfWidth + 'px';
+    });
+
     function onMove(e) {
       if (!dragging) return;
-      var delta = side === 'left'
-        ? e.clientX - startX
-        : startX - e.clientX;
+      var delta = startX - e.clientX;
       var newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta));
       panel.style.width = newWidth + 'px';
     }
 
     function onUp() {
       dragging = false;
-      handle.classList.remove('dragging');
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       document.removeEventListener('mousemove', onMove);

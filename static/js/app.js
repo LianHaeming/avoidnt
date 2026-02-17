@@ -218,7 +218,7 @@ document.addEventListener('click', function(e) {
 (function() {
   const inflight = {};
 
-  function fetchSpotifyThumbnail(spotifyUrl) {
+  window.fetchSpotifyThumbnail = function fetchSpotifyThumbnail(spotifyUrl) {
     if (inflight[spotifyUrl] !== undefined) return inflight[spotifyUrl];
     if (!spotifyUrl || !/^https?:\/\/(open\.)?spotify\.com\/(track|album|playlist|artist)\//.test(spotifyUrl)) {
       return Promise.resolve('');
