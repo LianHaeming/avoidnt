@@ -143,12 +143,13 @@ function onStageChange(select, songId, exerciseId) {
   }).catch(console.error);
 
   // Update card colors
-  const card = select.closest('.expanded-card');
+  const card = select.closest('.expanded-card-wrapper');
   if (card) {
     const colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
     const color = colors[newStage] || '#9ca3af';
     select.style.color = color;
-    card.style.borderLeftColor = color;
+    var innerCard = card.querySelector('.expanded-card');
+    if (innerCard) innerCard.style.borderLeftColor = color;
     card.dataset.stage = newStage;
 
     // Update section nav pill for this exercise's section
@@ -162,7 +163,7 @@ function updateSectionPill(sectionId) {
   if (!pill) return;
 
   // Find all exercise cards in this section and compute lowest stage
-  var cards = document.querySelectorAll('.expanded-card[data-section-id="' + sectionId + '"]');
+  var cards = document.querySelectorAll('.expanded-card-wrapper[data-section-id="' + sectionId + '"]');
   var lowest = 5;
   cards.forEach(function(c) {
     var s = parseInt(c.dataset.stage) || 1;
@@ -335,7 +336,7 @@ var _resizeState = null;
 function cropResizeStart(event, handle) {
   event.preventDefault();
   event.stopPropagation();
-  var card = handle.closest('.expanded-card');
+  var card = handle.closest('.expanded-card-wrapper');
   if (!card) return;
 
   var cropArea = card.querySelector('.card-crop-area');
@@ -400,7 +401,7 @@ function cropResizeEnd() {
 
 // Apply saved crop scales on page load
 function applyCropScales() {
-  document.querySelectorAll('.expanded-card[data-crop-scale]').forEach(function(card) {
+  document.querySelectorAll('.expanded-card-wrapper[data-crop-scale]').forEach(function(card) {
     var scale = parseFloat(card.dataset.cropScale);
     if (!scale || scale === 100) return;
     var imgs = card.querySelectorAll('.card-crop-img');

@@ -72,7 +72,7 @@ function _updateCardTimerDisplay(card) {
 
 // ===== Card-level reps (always visible) =====
 function cardAddReps(btn, count) {
-  var card = btn.closest('.expanded-card');
+  var card = btn.closest('.expanded-card-wrapper');
   if (!card) return;
   var songId = card.dataset.songId;
   var exerciseId = card.dataset.exerciseId;

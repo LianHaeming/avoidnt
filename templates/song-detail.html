@@ -99,59 +99,60 @@
       {{else}}
         <div class="expanded-list">
           {{range .Exercises}}
-          <div class="expanded-card" id="card-{{.ID}}"
-               style="border-left-color:{{stageColor .Stage | safeCSS}}"
+          <div class="expanded-card-wrapper" id="card-{{.ID}}"
                data-song-id="{{$.Song.ID}}" data-exercise-id="{{.ID}}"
                data-section-id="{{.SectionID}}"
                data-stage="{{.Stage}}"
                data-crop-scale="{{if .CropScale}}{{derefFloat .CropScale}}{{else}}100{{end}}"
                data-total-seconds="{{.TotalPracticedSeconds}}" data-total-reps="{{.TotalReps}}">
 
-            <!-- Crop area with overlaid info -->
-            <div class="card-crop-area" onclick="cardCropClick(this.closest('.expanded-card'))"
-                 {{if notNil $.Song.CropBgColor}}style="background:{{derefStr $.Song.CropBgColor}}"{{end}}>
-              <!-- Top-left: name -->
-              <div class="card-overlay-header">
-                <h3 class="card-title-name">{{.Name}}</h3>
-              </div>
-
-              {{if and (gt (len .Crops) 0) $.Song.JobID}}
-                {{range $i, $crop := .Crops}}
-                <div class="card-crop-item">
-                  <img src="/api/songs/{{$.Song.ID}}/preview/{{$crop.ID}}" alt="crop {{add $i 1}}" class="card-crop-img" loading="lazy"
-                       onerror="this.outerHTML='<div class=\'card-crop-placeholder\'><span>Failed to load</span></div>'" />
+            <!-- The visual card: crop image only -->
+            <div class="expanded-card"
+                 style="border-left-color:{{stageColor .Stage | safeCSS}}">
+              <div class="card-crop-area" onclick="cardCropClick(this.closest('.expanded-card-wrapper'))"
+                   {{if notNil $.Song.CropBgColor}}style="background:{{derefStr $.Song.CropBgColor}}"{{end}}>
+                <div class="card-overlay-header">
+                  <h3 class="card-title-name">{{.Name}}</h3>
                 </div>
-                {{end}}
-              {{else}}
-                <div class="card-crop-placeholder"><span>🎵</span></div>
-              {{end}}
 
-              <!-- Drag handle for crop resize (visible in edit mode) -->
-              <div class="card-crop-resize-handle" onmousedown="cropResizeStart(event, this)" ontouchstart="cropResizeStart(event, this)">
-                <span class="resize-handle-bar"></span>
-              </div>
-
-              <!-- Bottom-left: stage + controls -->
-              <div class="card-overlay-controls" onclick="event.stopPropagation()">
-                <select class="card-stage-select" aria-label="Stage"
-                        style="color:{{stageColor .Stage | safeCSS}}"
-                        onchange="onStageChange(this,'{{$.Song.ID}}','{{.ID}}')">
-                  {{$currentStage := .Stage}}
-                  {{range seq 5}}
-                  <option value="{{.}}" {{if eq . $currentStage}}selected{{end}}>{{index $.Settings.StageNames (sub . 1)}}</option>
+                {{if and (gt (len .Crops) 0) $.Song.JobID}}
+                  {{range $i, $crop := .Crops}}
+                  <div class="card-crop-item">
+                    <img src="/api/songs/{{$.Song.ID}}/preview/{{$crop.ID}}" alt="crop {{add $i 1}}" class="card-crop-img" loading="lazy"
+                         onerror="this.outerHTML='<div class=\'card-crop-placeholder\'><span>Failed to load</span></div>'" />
+                  </div>
                   {{end}}
-                </select>
-                <button class="card-timer-btn" onclick="cardStartTimer(this.closest('.expanded-card'))" title="Start timer">
-                  <svg class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                  <svg class="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
-                </button>
-                <span class="card-timer-display">{{formatTimer .TotalPracticedSeconds}}</span>
-                <span class="card-reps-label">Reps</span>
-                <span class="card-reps-count">{{.TotalReps}}</span>
-                <button class="card-rep-btn" onclick="cardAddReps(this,1)">+1</button>
-                <button class="card-rep-btn" onclick="cardAddReps(this,5)">+5</button>
-              </div>
+                {{else}}
+                  <div class="card-crop-placeholder"><span>🎵</span></div>
+                {{end}}
 
+                <!-- Drag handle for crop resize (visible in edit mode) -->
+                <div class="card-crop-resize-handle" onmousedown="cropResizeStart(event, this)" ontouchstart="cropResizeStart(event, this)">
+                  <span class="resize-handle-bar"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controls below the card -->
+            <div class="card-controls-bar" onclick="event.stopPropagation()">
+              <select class="card-stage-select" aria-label="Stage"
+                      style="color:{{stageColor .Stage | safeCSS}}"
+                      onchange="onStageChange(this,'{{$.Song.ID}}','{{.ID}}')">
+                {{$currentStage := .Stage}}
+                {{range seq 5}}
+                <option value="{{.}}" {{if eq . $currentStage}}selected{{end}}>{{index $.Settings.StageNames (sub . 1)}}</option>
+                {{end}}
+              </select>
+              <button class="card-timer-btn" onclick="cardStartTimer(this.closest('.expanded-card-wrapper'))" title="Start timer">
+                <svg class="icon-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="icon-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>
+              </button>
+              <span class="card-timer-display">{{formatTimer .TotalPracticedSeconds}}</span>
+              <span class="card-controls-sep"></span>
+              <span class="card-reps-label">Reps</span>
+              <span class="card-reps-count">{{.TotalReps}}</span>
+              <button class="card-rep-btn" onclick="cardAddReps(this,1)">+1</button>
+              <button class="card-rep-btn" onclick="cardAddReps(this,5)">+5</button>
             </div>
           </div>
           {{end}}

@@ -15,7 +15,6 @@
         <div class="row-scroller">
           {{range .Songs}}
           <div class="song-card"
-               style="background:{{stageTint (deref .LowestStage) | safeCSS}};border-color:{{stageBorder (deref .LowestStage) | safeCSS}}"
                onclick="location.href='/songs/{{.ID}}'"
                title="{{.Title}}{{if .Artist}} — {{.Artist}}{{end}}"
                {{if notNil .SpotifyURL}}data-spotify-url="{{derefStr .SpotifyURL}}"{{end}}>
