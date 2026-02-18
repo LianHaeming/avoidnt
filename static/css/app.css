@@ -5,6 +5,7 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -12,6 +13,8 @@ html, body {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+.dark-mode, .dark-mode body { background: #191919; }
+body:has(.dark-mode) { background: #191919; }
 ::-webkit-scrollbar { display: none; }
 *, *::before, *::after {
   box-sizing: border-box;

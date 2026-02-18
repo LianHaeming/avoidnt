@@ -36,8 +36,15 @@ function setTheme(theme) {
   if (!shell) return;
   if (theme === 'dark') {
     shell.classList.add('dark-mode');
+    document.body.style.background = '#191919';
   } else {
     shell.classList.remove('dark-mode');
+    document.body.style.background = '#ffffff';
+  }
+  // Update Safari/Chrome theme-color
+  const themeMeta = document.getElementById('theme-color-meta');
+  if (themeMeta) {
+    themeMeta.setAttribute('content', theme === 'dark' ? '#191919' : '#ffffff');
   }
   // Update active buttons
   document.querySelectorAll('.theme-segment').forEach(btn => {
