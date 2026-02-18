@@ -1421,12 +1421,75 @@
 
   window.pdDiscard = function() {
     if (isDirty) {
-      if (!confirm('Discard changes?\n\nYou have unsaved changes. Are you sure you want to leave?')) return;
+      showConfirmModal('You have unsaved changes. Are you sure you want to leave?', 'Leave', 'danger', function() {
+        isDirty = false; // prevent beforeunload
+        if (mode === 'edit') {
+          location.href = '/songs/' + songId;
+        } else {
+          location.href = '/songs';
+        }
+      });
+      return;
     }
     if (mode === 'edit') {
       location.href = '/songs/' + songId;
     } else {
       location.href = '/songs';
+    }
+  };
+
+  window.pdShowDeleteModal = function() {
+    showConfirmModal('Are you sure you want to delete this song? This cannot be undone.', 'Delete', 'danger', function() {
+      fetch('/api/songs/' + songId, { method: 'DELETE' })
+        .then(function(res) {
+          if (res.ok) {
+            isDirty = false;
+            location.href = '/songs';
+          } else {
+            alert('Failed to delete song');
+          }
+        })
+        .catch(function(err) { console.error(err); alert('Failed to delete song'); });
+    });
+  };
+
+  // ===== Confirm Modal =====
+  function showConfirmModal(message, confirmLabel, style, onConfirm) {
+    var backdrop = document.getElementById('confirm-modal-backdrop');
+    var msgEl = document.getElementById('confirm-modal-msg');
+    var confirmBtn = document.getElementById('confirm-modal-confirm');
+    var cancelBtn = document.getElementById('confirm-modal-cancel');
+    if (!backdrop || !msgEl || !confirmBtn || !cancelBtn) return;
+
+    msgEl.textContent = message;
+    confirmBtn.textContent = confirmLabel || 'Confirm';
+    confirmBtn.className = 'confirm-modal-btn confirm' + (style === 'danger' ? ' danger' : '');
+    backdrop.style.display = 'flex';
+
+    function cleanup() {
+      backdrop.style.display = 'none';
+      confirmBtn.removeEventListener('click', onConfirmClick);
+      cancelBtn.removeEventListener('click', onCancelClick);
+      backdrop.removeEventListener('click', onBackdropClick);
+    }
+    function onConfirmClick() { cleanup(); onConfirm(); }
+    function onCancelClick() { cleanup(); }
+    function onBackdropClick(e) { if (e.target === backdrop) cleanup(); }
+
+    confirmBtn.addEventListener('click', onConfirmClick);
+    cancelBtn.addEventListener('click', onCancelClick);
+    backdrop.addEventListener('click', onBackdropClick);
+  }
+
+  // Register global navigation guard so header links (logo, settings) prompt on unsaved changes
+  window._navGuard = function(url) {
+    if (isDirty) {
+      showConfirmModal('You have unsaved changes. Are you sure you want to leave?', 'Leave', 'danger', function() {
+        isDirty = false;
+        location.href = url;
+      });
+    } else {
+      location.href = url;
     }
   };
 

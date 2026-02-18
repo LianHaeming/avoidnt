@@ -37,7 +37,7 @@ html, body {
   overflow: auto;
 }
 .dark-mode .shell-content {
-  background: var(--background-color, #000000);
+  background: var(--background-color, #191919);
 }
 
 /* ===== Header ===== */
@@ -67,12 +67,12 @@ html, body {
   z-index: 49;
 }
 .dark-mode .app-header {
-  background: linear-gradient(to bottom, rgba(0,0,0,0.84) 0%, rgba(0,0,0,0.98) 100%);
+  background: #202020;
   color: #f5f5f7;
   border-bottom: none;
 }
 .dark-mode .app-header::after {
-  background: linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
+  background: transparent;
 }
 .header-left { flex: 1; }
 .header-right {
@@ -422,7 +422,7 @@ html, body {
 .menu-item.danger:hover { background:#fef2f2; }
 
 /* Dark mode songs browse */
-.dark-mode .home-view { background:#000000; }
+.dark-mode .home-view { background:#191919; }
 .dark-mode .row-title { color:#f5f5f7; }
 .dark-mode .song-card { background:transparent; }
 .dark-mode .card-thumbnail { background:#1e1e20; box-shadow:0 2px 8px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15); }
@@ -1224,7 +1224,7 @@ html, body {
 
 /* Footer */
 .col-right-footer {
-  display:flex; align-items:center; justify-content:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:8px; padding:12px 16px; border-top:1px solid #e5e7eb; flex-shrink:0;
 }
 .save-error {
@@ -1672,3 +1672,82 @@ html, body {
 
 /* ===== Dark mode selection ===== */
 .dark-mode ::selection { background:#0a84ff; color:white; }
+
+/* ===== Confirmation Modal ===== */
+.confirm-modal-backdrop {
+  position:fixed; inset:0; z-index:10000;
+  background:rgba(0,0,0,0.4); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center;
+  animation:fadeIn 0.15s ease;
+}
+.confirm-modal {
+  background:#fff; border-radius:14px; padding:1.5rem;
+  max-width:340px; width:calc(100% - 2rem);
+  box-shadow:0 8px 40px rgba(0,0,0,0.2);
+  animation:modalIn 0.2s ease;
+}
+.confirm-modal-msg {
+  margin:0 0 1.25rem; font-size:0.9rem; color:#1d1d1f;
+  line-height:1.5; text-align:center;
+}
+.confirm-modal-actions {
+  display:flex; gap:0.5rem;
+}
+.confirm-modal-btn {
+  flex:1; padding:0.6rem 1rem; font-size:0.85rem; font-weight:500;
+  border-radius:8px; cursor:pointer; border:1px solid #d1d5db;
+  background:#f3f4f6; color:#374151; transition:all 0.15s;
+}
+.confirm-modal-btn:hover { background:#e5e7eb; }
+.confirm-modal-btn.confirm { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+.confirm-modal-btn.confirm:hover { background:#2563eb; }
+.confirm-modal-btn.confirm.danger { background:#dc2626; color:#fff; border-color:#dc2626; }
+.confirm-modal-btn.confirm.danger:hover { background:#b91c1c; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes modalIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+/* Dark mode modal */
+.dark-mode .confirm-modal { background:#1e1e20; box-shadow:0 8px 40px rgba(0,0,0,0.5); }
+.dark-mode .confirm-modal-msg { color:#f5f5f7; }
+.dark-mode .confirm-modal-btn { background:#2a2a2c; border-color:#3a3a3c; color:#d2d2d7; }
+.dark-mode .confirm-modal-btn:hover { background:#3a3a3c; }
+.dark-mode .confirm-modal-btn.confirm { background:#0a84ff; border-color:#0a84ff; color:#fff; }
+.dark-mode .confirm-modal-btn.confirm:hover { background:#0071e3; }
+.dark-mode .confirm-modal-btn.confirm.danger { background:#ff453a; border-color:#ff453a; }
+.dark-mode .confirm-modal-btn.confirm.danger:hover { background:#dc2626; }
+
+/* ===== Delete Song Button (plan designer footer) ===== */
+.col-right-footer-actions {
+  display:flex; flex-direction:column; gap:8px; width:100%;
+}
+.delete-song-btn {
+  width:100%; padding:8px 16px; font-size:0.8rem; font-weight:500;
+  border-radius:6px; cursor:pointer; border:1px solid #fecaca;
+  background:transparent; color:#dc2626; transition:all 0.15s;
+}
+.delete-song-btn:hover { background:#fef2f2; }
+.dark-mode .delete-song-btn { border-color:#5c2020; color:#ff6961; }
+.dark-mode .delete-song-btn:hover { background:#3a1c1c; }
+
+/* ===== Dropdown overflow fix ===== */
+.song-detail-dropdown {
+  max-height:calc(100vh - 80px); overflow-y:auto;
+}
+@media (max-width:600px) {
+  .song-detail-dropdown {
+    position:fixed; top:auto; bottom:0; left:0; right:0;
+    border-radius:14px 14px 0 0; max-height:60vh;
+    animation:slideUpSheet 0.25s ease;
+  }
+  @keyframes slideUpSheet { from { transform:translateY(100%); } to { transform:translateY(0); } }
+}
+
+/* ===== Sidebar save button fix ===== */
+@media (max-width:900px) {
+  .col-editor { min-height:0; flex:1; }
+  .col-right-footer {
+    position:sticky; bottom:0; z-index:50;
+    background:#fff; border-top:1px solid #e5e7eb;
+  }
+  .dark-mode .col-right-footer { background:#141416; border-color:#2a2a2c; }
+}

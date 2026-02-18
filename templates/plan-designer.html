@@ -58,7 +58,7 @@
     <div class="col-editor" id="col-editor">
       <div class="editor-scroll">
         {{if eq .Mode "edit"}}
-          <a class="back-link" href="/songs/{{.SongID}}" style="display:block;text-align:left;margin-bottom:12px">← Back to song</a>
+          <a class="back-link" href="javascript:void(0)" onclick="pdDiscard()" style="display:block;text-align:left;margin-bottom:12px">← Back to song</a>
         {{end}}
 
         <!-- Song Header (WYSIWYG preview) -->
@@ -172,10 +172,26 @@
       <div class="col-right-footer">
         <span class="save-error" id="pd-save-error" style="display:none"></span>
         <span class="save-hint" id="pd-missing-msg" style="display:none" title="">ⓘ</span>
-        <button class="save-btn" id="pd-save-btn" onclick="pdSave()" disabled>
-          Save
-        </button>
+        <div class="col-right-footer-actions">
+          <button class="save-btn" id="pd-save-btn" onclick="pdSave()" disabled>
+            Save
+          </button>
+          {{if eq .Mode "edit"}}
+          <button class="delete-song-btn" onclick="pdShowDeleteModal()">Delete Song</button>
+          {{end}}
+        </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="confirm-modal-backdrop" id="confirm-modal-backdrop" style="display:none">
+  <div class="confirm-modal">
+    <p class="confirm-modal-msg" id="confirm-modal-msg"></p>
+    <div class="confirm-modal-actions">
+      <button class="confirm-modal-btn cancel" id="confirm-modal-cancel">Cancel</button>
+      <button class="confirm-modal-btn confirm" id="confirm-modal-confirm">Confirm</button>
     </div>
   </div>
 </div>

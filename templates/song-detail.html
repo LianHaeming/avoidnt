@@ -21,10 +21,10 @@
           <button class="edit-song-btn" onclick="toggleSongDetailMenu(event)" title="Options">&#8942;</button>
           <div class="song-detail-dropdown" id="song-detail-dropdown">
             <button class="menu-item" onclick="toggleEditExercises(); closeSongDetailMenu();">
-              <span>🎨</span> Edit Exercises
+              Edit Exercises
             </button>
             <button class="menu-item" onclick="location.href='/songs/{{.Song.ID}}/edit'; closeSongDetailMenu();">
-              <span>✏️</span> Edit Song
+              Edit Song
             </button>
           </div>
         </div>

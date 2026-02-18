@@ -1,3 +1,13 @@
+// ===== Navigation Guard =====
+// Pages can set window._navGuard to a function(url) that returns false to block navigation.
+function navGuard(url) {
+  if (typeof window._navGuard === 'function') {
+    window._navGuard(url);
+  } else {
+    location.href = url;
+  }
+}
+
 // ===== Settings Page =====
 
 // Display name
@@ -72,46 +82,6 @@ function resetStageNames() {
   const inputs = document.querySelectorAll('.stage-name-input');
   inputs.forEach((input, i) => { input.value = defaults[i]; });
   saveStageNames();
-}
-
-// ===== Songs Browse: Context Menu =====
-let _ctxSongId = null;
-
-function openCtxMenu(event, songId) {
-  event.stopPropagation();
-  _ctxSongId = songId;
-  const btn = event.target;
-  const rect = btn.getBoundingClientRect();
-  const menu = document.getElementById('ctx-menu');
-  const backdrop = document.getElementById('ctx-menu-backdrop');
-  if (!menu || !backdrop) return;
-  menu.style.display = 'block';
-  menu.style.top = rect.bottom + 4 + 'px';
-  menu.style.right = (window.innerWidth - rect.right) + 'px';
-  backdrop.style.display = 'block';
-}
-
-function closeCtxMenu() {
-  const menu = document.getElementById('ctx-menu');
-  const backdrop = document.getElementById('ctx-menu-backdrop');
-  if (menu) menu.style.display = 'none';
-  if (backdrop) backdrop.style.display = 'none';
-  _ctxSongId = null;
-}
-
-function deleteCtxSong() {
-  if (!_ctxSongId) return;
-  if (!confirm('Are you sure you want to delete this song? This cannot be undone.')) {
-    closeCtxMenu();
-    return;
-  }
-  fetch('/api/songs/' + _ctxSongId, { method: 'DELETE' })
-    .then(res => {
-      if (res.ok) location.reload();
-      else alert('Failed to delete song');
-    })
-    .catch(err => { console.error(err); alert('Failed to delete song'); });
-  closeCtxMenu();
 }
 
 // ===== Search =====

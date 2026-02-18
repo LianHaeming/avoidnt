@@ -69,3 +69,5 @@ PDF conversion requires **mutool** (mupdf-tools) or **pdftoppm** (poppler) on th
 ## Debugging Rules
 
 - **Always grep for all instances of a CSS class/selector across the entire stylesheet before diagnosing or fixing a styling issue.** Duplicate rules in different parts of `app.css` can override each other unexpectedly.
+
+you dont have to build the entire app for testing. when you finish i will run it myself and test it.
