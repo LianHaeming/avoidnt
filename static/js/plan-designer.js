@@ -1596,3 +1596,81 @@
     }
   });
 })();
+
+// ===== Horizontal (Row) Resize for Mobile =====
+(function() {
+  'use strict';
+  var handle = document.getElementById('resize-row');
+  if (!handle) return;
+
+  var MIN_HEIGHT = 100;
+  var dragging = false;
+  var startY, editorStartH, pdfStartH, container, editor, pdf;
+
+  function startDrag(clientY) {
+    container = document.querySelector('.designer-two-col');
+    editor = document.getElementById('col-editor');
+    pdf = document.getElementById('col-pdf');
+    if (!container || !editor || !pdf) return;
+
+    dragging = true;
+    startY = clientY;
+    editorStartH = editor.getBoundingClientRect().height;
+    pdfStartH = pdf.getBoundingClientRect().height;
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  }
+
+  handle.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    startDrag(e.clientY);
+  });
+
+  handle.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    startDrag(e.touches[0].clientY);
+  }, { passive: false });
+
+  handle.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+    editor = document.getElementById('col-editor');
+    pdf = document.getElementById('col-pdf');
+    if (!editor || !pdf) return;
+    // Reset to default 60/40 split
+    editor.style.height = 'calc(60% - 4px)';
+    pdf.style.height = '40%';
+  });
+
+  function onMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // In column-reverse layout: editor is on top, handle, then PDF below.
+    // Dragging down → editor grows, PDF shrinks
+    var delta = clientY - startY;
+    var containerH = container.getBoundingClientRect().height - 8; // subtract handle height
+    var newEditorH = Math.max(MIN_HEIGHT, Math.min(containerH - MIN_HEIGHT, editorStartH + delta));
+    var newPdfH = containerH - newEditorH;
+    editor.style.height = newEditorH + 'px';
+    editor.style.flex = 'none';
+    pdf.style.height = newPdfH + 'px';
+    pdf.style.flex = 'none';
+  }
+
+  function onEnd() {
+    dragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    document.body.style.webkitUserSelect = '';
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+  }
+})();
