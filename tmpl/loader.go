@@ -41,8 +41,11 @@ func (t *Templates) ExecuteTemplate(w io.Writer, name string, data any) error {
 
 // Load parses all templates. Each page template gets its own clone of the
 // shared templates (layout + partials) so {{define "content"}} doesn't collide.
-func Load() *Templates {
+func Load(assetVer string) *Templates {
 	funcMap := template.FuncMap{
+		// Cache-busting version string for static assets
+		"assetVer": func() string { return assetVer },
+
 		// Math / formatting
 		"mul":  func(a, b float64) float64 { return a * b },
 		"pct":  func(f float64) string { return fmt.Sprintf("%.2f%%", f*100) },

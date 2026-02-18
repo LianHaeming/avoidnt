@@ -5,13 +5,25 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/LianHaeming/avoidnt/handlers"
 	"github.com/LianHaeming/avoidnt/storage"
 	"github.com/LianHaeming/avoidnt/tmpl"
 )
 
+// BuildVersion is set at compile time via -ldflags.
+// If empty (local dev), falls back to a timestamp so assets are never cached.
+var BuildVersion string
+
 func main() {
+	// Resolve asset version for cache-busting
+	assetVer := BuildVersion
+	if assetVer == "" {
+		assetVer = strconv.FormatInt(time.Now().Unix(), 10)
+	}
+
 	// Configuration from environment (with sensible defaults)
 	port := envOr("PORT", "8000")
 	songsPath := envOr("SONGS_STORAGE_PATH", "data/songs")
@@ -25,7 +37,7 @@ func main() {
 	jobStore := storage.NewJobStore(pdfOutputPath)
 
 	// Parse templates
-	templates := tmpl.Load()
+	templates := tmpl.Load(assetVer)
 
 	// Build handler dependencies
 	deps := &handlers.Deps{

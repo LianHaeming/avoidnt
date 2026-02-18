@@ -12,8 +12,12 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the binary
-RUN go build -o avoidnt .
+# Build the binary with git commit hash for cache-busting static assets
+# Railway provides RAILWAY_GIT_COMMIT_SHA; fall back to git or timestamp
+ARG RAILWAY_GIT_COMMIT_SHA=""
+RUN BUILD_VER="${RAILWAY_GIT_COMMIT_SHA:-$(git rev-parse --short HEAD 2>/dev/null || date +%s)}" && \
+    BUILD_VER=$(echo "$BUILD_VER" | head -c 12) && \
+    go build -ldflags "-X main.BuildVersion=${BUILD_VER}" -o avoidnt .
 
 # Runtime stage
 FROM alpine:3.21
