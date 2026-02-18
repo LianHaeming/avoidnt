@@ -494,9 +494,27 @@ html, body {
 .edit-song-btn {
   display:flex; align-items:center; justify-content:center;
   width:32px; height:32px; background:transparent; border:none;
-  border-radius:6px; cursor:pointer; font-size:1.25rem; color:#9ca3af; transition:all 0.15s;
+  border-radius:8px; cursor:pointer; color:#9ca3af; transition:all 0.15s;
+  text-decoration:none;
 }
 .edit-song-btn:hover { background:rgba(0,0,0,0.06); color:#6b7280; }
+.edit-song-btn svg { display:block; }
+
+/* Hover pencil on exercise cards */
+.card-edit-pencil {
+  position:absolute; top:8px; right:8px; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  width:30px; height:30px; border-radius:8px;
+  background:rgba(255,255,255,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(0,0,0,0.06);
+  color:#6b7280; cursor:pointer;
+  opacity:0; transition:opacity 0.15s, background 0.15s, color 0.15s;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
+}
+.card-edit-pencil svg { display:block; }
+.expanded-card:hover .card-edit-pencil { opacity:1; }
+.card-edit-pencil:hover { background:rgba(255,255,255,0.95); color:#374151; }
+.editing-exercises .card-edit-pencil { display:none; }
 
 /* Song detail three-dot dropdown */
 .song-detail-menu { position:relative; }
@@ -511,62 +529,43 @@ html, body {
 
 /* Edit Exercises Toolbar */
 .edit-exercises-toolbar {
-  background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px;
-  padding:0.75rem 1rem; margin-bottom:1rem; animation:slideUp 0.2s ease;
+  background:transparent; border:none; border-radius:0;
+  padding:0; margin-bottom:0.75rem; animation:slideUp 0.2s ease;
 }
 .edit-toolbar-header {
-  display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+}
+.edit-toolbar-left {
+  display:flex; align-items:center; gap:0.75rem;
 }
 .edit-toolbar-title { font-size:0.9rem; font-weight:600; color:#374151; }
 .edit-toolbar-done {
-  padding:0.3rem 0.8rem; font-size:0.8rem; font-weight:500;
-  background:#3b82f6; color:#fff; border:none; border-radius:6px;
-  cursor:pointer; transition:background 0.15s;
+  padding:0.35rem 1rem; font-size:0.8rem; font-weight:600; letter-spacing:0.01em;
+  background:rgba(0,0,0,0.06); color:#6b7280; border:none; border-radius:8px;
+  cursor:pointer; transition:all 0.15s;
 }
-.edit-toolbar-done:hover { background:#2563eb; }
+.edit-toolbar-done:hover { background:rgba(0,0,0,0.1); color:#374151; }
 .edit-toolbar-row {
   display:flex; align-items:flex-start; gap:0.75rem; flex-wrap:wrap;
 }
-.edit-toolbar-label { font-size:0.8rem; font-weight:500; color:#6b7280; white-space:nowrap; padding-top:0.2rem; }
-.edit-toolbar-colors { display:flex; align-items:flex-start; gap:1.25rem; flex-wrap:wrap; }
+.edit-toolbar-label { font-size:0.8rem; font-weight:500; color:#6b7280; white-space:nowrap; padding-top:0.15rem; }
 
-/* Color groups */
-.color-group { display:flex; flex-direction:column; align-items:flex-start; gap:0.35rem; }
-.color-group-label { font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af; }
-.color-group-swatches { display:flex; gap:0.35rem; }
+/* Background toggle switch (light/dark) */
+.bg-toggle {
+  position:relative; width:36px; height:20px; border-radius:10px;
+  background:#e5e7eb; border:none; cursor:pointer; padding:0;
+  transition:background 0.2s; flex-shrink:0;
+}
+.bg-toggle-thumb {
+  position:absolute; top:2px; left:2px;
+  width:16px; height:16px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.15);
+  transition:transform 0.2s;
+}
+.bg-toggle--dark { background:#4b5563; }
+.bg-toggle--dark .bg-toggle-thumb { transform:translateX(16px); background:#1e1e1e; }
 
-.color-swatch {
-  width:28px; height:28px; border-radius:50%; border:2px solid transparent;
-  cursor:pointer; transition:all 0.15s; flex-shrink:0;
-}
-.color-swatch:hover { transform:scale(1.15); }
-.color-swatch.active { border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,0.3); }
-
-/* Custom color picker */
-.color-custom-wrapper {
-  display:flex; align-items:center; justify-content:center;
-  width:28px; height:28px; cursor:pointer; position:relative;
-  border:2px dashed #6b7280; border-radius:50%;
-  transition:all 0.15s; background:rgba(107,114,128,0.06);
-}
-.color-custom-wrapper:hover {
-  border-color:#3b82f6; transform:scale(1.15); background:rgba(59,130,246,0.08);
-}
-.color-custom-input {
-  position:absolute; inset:0; opacity:0; width:100%; height:100%;
-  cursor:pointer; border:none; padding:0;
-}
-.color-custom-icon {
-  color:#6b7280; pointer-events:none;
-}
-.edit-toolbar-hint { font-size:0.75rem; color:#9ca3af; margin:0.5rem 0 0; }
-.edit-toolbar-regen {
-  margin-top:0.5rem; padding:0.4rem 0.8rem; font-size:0.8rem; font-weight:500;
-  background:none; border:1px solid #d1d5db; border-radius:6px; color:#6b7280;
-  cursor:pointer; transition:all 0.15s;
-}
-.edit-toolbar-regen:hover { background:#f3f4f6; color:#374151; border-color:#9ca3af; }
-.edit-toolbar-regen:disabled { opacity:0.6; cursor:wait; }
+.edit-toolbar-hint { font-size:0.72rem; color:#9ca3af; margin:0.4rem 0 0; }
 
 /* Crop resize drag handle (hidden by default, shown in edit mode) */
 .card-crop-resize-handle {
@@ -589,16 +588,16 @@ html, body {
 .dark-mode .card-crop-resize-handle:hover .resize-handle-bar { background:#60a5fa; }
 
 /* Dark mode edit toolbar */
-.dark-mode .edit-exercises-toolbar { background:#141416; border-color:#2a2a2c; }
+.dark-mode .edit-exercises-toolbar { background:transparent; border:none; }
 .dark-mode .edit-toolbar-title { color:#e5e7eb; }
 .dark-mode .edit-toolbar-label { color:#9ca3af; }
 .dark-mode .edit-toolbar-hint { color:#6b7280; }
-.dark-mode .edit-toolbar-regen { border-color:#4b5563; color:#9ca3af; }
-.dark-mode .edit-toolbar-regen:hover { background:#1e1e20; color:#f5f5f7; border-color:#636366; }
-.dark-mode .color-group-label { color:#636366; }
-.dark-mode .color-custom-wrapper { border-color:#4b5563; background:rgba(255,255,255,0.04); }
-.dark-mode .color-custom-wrapper:hover { border-color:#60a5fa; background:rgba(96,165,250,0.1); }
-.dark-mode .color-custom-icon { color:#9ca3af; }
+.dark-mode .edit-toolbar-done { background:rgba(255,255,255,0.08); color:#9ca3af; }
+.dark-mode .edit-toolbar-done:hover { background:rgba(255,255,255,0.12); color:#f5f5f7; }
+.dark-mode .bg-toggle { background:#3a3a3c; }
+.dark-mode .bg-toggle-thumb { background:#d1d5db; }
+.dark-mode .bg-toggle--dark { background:#636366; }
+.dark-mode .bg-toggle--dark .bg-toggle-thumb { background:#1e1e1e; }
 .header-separator { border:none; border-top:1px solid #e5e7eb; margin:1.25rem 0; }
 .mastered-banner {
   padding:0.75rem 1rem; background:rgba(34,197,94,0.1);
@@ -624,7 +623,7 @@ html, body {
 .expanded-card {
   display:flex; flex-direction:column; border:none; border-radius:14px;
   overflow:hidden; transition:box-shadow 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); border-left:3px solid #9ca3af;
-  background:#f5f5f7;
+  background:#f5f5f7; position:relative;
   box-shadow:0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
 }
 .expanded-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06); }
@@ -761,6 +760,10 @@ html, body {
 .dark-mode .meta-chip { background:#1e1e20; color:#d2d2d7; }
 .dark-mode .expanded-card { background:#141416; border-color:#2a2a2c; box-shadow:0 2px 8px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.15); }
 .dark-mode .expanded-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.15); }
+.dark-mode .card-edit-pencil { background:rgba(30,30,32,0.85); border-color:rgba(255,255,255,0.08); color:#9ca3af; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+.dark-mode .card-edit-pencil:hover { background:rgba(44,44,46,0.95); color:#f5f5f7; }
+.dark-mode .edit-song-btn { color:#86868b; }
+.dark-mode .edit-song-btn:hover { background:rgba(255,255,255,0.06); color:#f5f5f7; }
 .dark-mode .card-controls-sep { background:#48484a; }
 .dark-mode .card-title-name { color:#f5f5f7; }
 .dark-mode .card-stage-select { background:#1e1e20; border-color:#2a2a2c; color:inherit; }
@@ -1412,23 +1415,6 @@ html, body {
 }
 .pd-popover-done:hover { background:rgba(59,130,246,0.08); }
 
-/* Plan Designer: Crop display toolbar */
-.pd-crop-toolbar {
-  margin-bottom:12px;
-}
-.pd-crop-toolbar-row {
-  display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;
-}
-.pd-crop-toolbar-label {
-  font-size:0.8rem; font-weight:500; color:#6b7280; white-space:nowrap;
-}
-.pd-crop-toolbar-colors {
-  display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;
-}
-.pd-crop-toolbar-hint {
-  font-size:0.7rem; color:#9ca3af; margin:0.4rem 0 0;
-}
-
 /* Show resize handles always in plan designer */
 .pd-resize-handle { display:flex !important; }
 
@@ -1440,8 +1426,6 @@ html, body {
 .dark-mode .pd-add-section-pill { border-color:#48484a; color:#636366; }
 .dark-mode .pd-add-section-pill:hover { border-color:#0a84ff; color:#0a84ff; }
 .dark-mode .pd-section-popover { background:#141416; border-color:#2a2a2c; }
-.dark-mode .pd-crop-toolbar-label { color:#9ca3af; }
-.dark-mode .pd-crop-toolbar-hint { color:#636366; }
 
 /* Responsive plan designer */
 @media (max-width:900px) {
@@ -1728,18 +1712,21 @@ html, body {
 .dark-mode .confirm-modal-btn.confirm.danger { background:#ff453a; border-color:#ff453a; }
 .dark-mode .confirm-modal-btn.confirm.danger:hover { background:#dc2626; }
 
-/* ===== Delete Song Button (plan designer footer) ===== */
-.col-right-footer-actions {
-  display:flex; flex-direction:column; gap:8px; width:100%;
+/* ===== Editor Top Row ===== */
+.editor-top-row {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px;
 }
-.delete-song-btn {
-  width:100%; padding:8px 16px; font-size:0.8rem; font-weight:500;
-  border-radius:6px; cursor:pointer; border:1px solid #fecaca;
+.editor-top-row .back-link { display:block; text-align:left; }
+.delete-song-btn-sm {
+  padding:4px 10px; font-size:0.7rem; font-weight:500;
+  border-radius:5px; cursor:pointer; border:1px solid #fecaca;
   background:transparent; color:#dc2626; transition:all 0.15s;
+  white-space:nowrap; flex-shrink:0;
 }
-.delete-song-btn:hover { background:#fef2f2; }
-.dark-mode .delete-song-btn { border-color:#5c2020; color:#ff6961; }
-.dark-mode .delete-song-btn:hover { background:#3a1c1c; }
+.delete-song-btn-sm:hover { background:#fef2f2; }
+.dark-mode .delete-song-btn-sm { border-color:#5c2020; color:#ff6961; }
+.dark-mode .delete-song-btn-sm:hover { background:#3a1c1c; }
 
 /* ===== Dropdown overflow fix ===== */
 .song-detail-dropdown {

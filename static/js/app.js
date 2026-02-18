@@ -426,17 +426,20 @@ function applyCropScales() {
   });
 }
 
+// Toggle crop background between light and dark
+function toggleCropBg() {
+  var toggle = document.getElementById('bg-toggle');
+  if (!toggle) return;
+  var isDark = toggle.classList.toggle('bg-toggle--dark');
+  var color = isDark ? '#1e1e1e' : '';
+  setCropBgColor(null, color);
+}
+
 // Crop background color
 function setCropBgColor(swatch, color) {
   var toolbar = document.getElementById('edit-exercises-toolbar');
   if (!toolbar) return;
   var songId = toolbar.dataset.songId;
-
-  // Update active state on swatches
-  toolbar.querySelectorAll('.color-swatch').forEach(function(s) {
-    s.classList.remove('active');
-  });
-  if (swatch) swatch.classList.add('active');
 
   // Determine if this is a dark background
   var isDark = isColorDark(color);

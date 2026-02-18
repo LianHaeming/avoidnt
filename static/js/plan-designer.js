@@ -937,6 +937,7 @@
     html += '</div>';
 
     html += '</div>'; // .card-crop-area
+
     html += '</div>'; // .expanded-card
 
     // Controls bar (matching song-detail style)
@@ -961,7 +962,7 @@
     html += '</select>';
 
     // Delete button
-    html += '<button class="card-delete-btn" onclick="event.stopPropagation();pdDeleteExercise(\'' + ex.id + '\')" title="Delete exercise">✕</button>';
+    html += '<button class="card-delete-btn" onclick="event.stopPropagation();pdDeleteExercise(\'' + ex.id + '\')">Remove</button>';
 
     html += '</div>'; // .card-controls-bar
 
@@ -1003,13 +1004,15 @@
   }
 
   window.pdDeleteExercise = function(id) {
-    exercises = exercises.filter(e => e.id !== id);
-    exercises.forEach((e, i) => e.sequenceNumber = i + 1);
-    isDirty = true;
-    renderExercises();
-    updateSaveState();
-    refreshAllCropOverlays();
-    updateHint();
+    showConfirmModal('Are you sure you want to remove this exercise?', 'Remove', 'danger', function() {
+      exercises = exercises.filter(e => e.id !== id);
+      exercises.forEach((e, i) => e.sequenceNumber = i + 1);
+      isDirty = true;
+      renderExercises();
+      updateSaveState();
+      refreshAllCropOverlays();
+      updateHint();
+    });
   };
 
   window.pdSetDesc = function(id, value) {
@@ -1069,41 +1072,8 @@
   }
 
   function renderCropToolbar() {
-    var toolbar = document.getElementById('pd-crop-toolbar');
-    if (!toolbar) return;
-    // Update active swatch
-    toolbar.querySelectorAll('.color-swatch').forEach(function(s) {
-      var c = s.dataset.color || '';
-      s.classList.toggle('active', c === (cropBgColor || ''));
-    });
+    // No-op: background toggle removed from editor
   }
-
-  window.pdSetCropBgColor = function(swatch, color) {
-    cropBgColor = color || null;
-    isDirty = true;
-    updateSaveState();
-
-    // Update active state
-    var toolbar = document.getElementById('pd-crop-toolbar');
-    if (toolbar) {
-      toolbar.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('active'); });
-    }
-    if (swatch) swatch.classList.add('active');
-
-    // Re-render exercises with new bg
-    renderExercises();
-  };
-
-  window.pdSetCropBgColorCustom = function(input) {
-    cropBgColor = input.value || null;
-    isDirty = true;
-    updateSaveState();
-    var toolbar = document.getElementById('pd-crop-toolbar');
-    if (toolbar) {
-      toolbar.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('active'); });
-    }
-    renderExercises();
-  };
 
   // Crop resize drag
   var _pdResizeState = null;

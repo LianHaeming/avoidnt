@@ -17,17 +17,9 @@
         </div>
       </div>
       <div class="song-header-right">
-        <div class="song-detail-menu" id="song-detail-menu">
-          <button class="edit-song-btn" onclick="toggleSongDetailMenu(event)" title="Options">&#8942;</button>
-          <div class="song-detail-dropdown" id="song-detail-dropdown">
-            <button class="menu-item" onclick="toggleEditExercises(); closeSongDetailMenu();">
-              Edit Exercises
-            </button>
-            <button class="menu-item" onclick="location.href='/songs/{{.Song.ID}}/edit?from=practice'; closeSongDetailMenu();">
-              Edit Song
-            </button>
-          </div>
-        </div>
+        <a class="edit-song-btn" href="/songs/{{.Song.ID}}/edit?from=practice" title="Edit song">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+        </a>
       </div>
     </div>
 
@@ -55,45 +47,15 @@
   <!-- Edit Exercises Toolbar -->
   <div class="edit-exercises-toolbar" id="edit-exercises-toolbar" style="display:none" data-song-id="{{.Song.ID}}">
     <div class="edit-toolbar-header">
-      <span class="edit-toolbar-title">Edit Exercises</span>
+      <div class="edit-toolbar-left">
+        <span class="edit-toolbar-label">Exercise Background</span>
+        <button class="bg-toggle{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#1e1e1e")}} bg-toggle--dark{{end}}" id="bg-toggle" onclick="toggleCropBg()" title="Toggle light/dark background">
+          <span class="bg-toggle-thumb"></span>
+        </button>
+      </div>
       <button class="edit-toolbar-done" onclick="toggleEditExercises()">Done</button>
     </div>
-    <div class="edit-toolbar-row">
-      <label class="edit-toolbar-label">Crop Background</label>
-      <div class="edit-toolbar-colors">
-        <div class="color-group">
-          <span class="color-group-label">Light</span>
-          <div class="color-group-swatches">
-            <button class="color-swatch{{if not (notNil .Song.CropBgColor)}} active{{end}}" data-color="" style="background:#ffffff;border:1px solid #d1d5db;" onclick="setCropBgColor(this,'')" title="White (default)"></button>
-            <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#f5f0e6")}} active{{end}}" data-color="#f5f0e6" style="background:#f5f0e6;" onclick="setCropBgColor(this,'#f5f0e6')" title="Warm"></button>
-            <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#e8e4d9")}} active{{end}}" data-color="#e8e4d9" style="background:#e8e4d9;" onclick="setCropBgColor(this,'#e8e4d9')" title="Sepia"></button>
-            <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#d4dce6")}} active{{end}}" data-color="#d4dce6" style="background:#d4dce6;" onclick="setCropBgColor(this,'#d4dce6')" title="Cool"></button>
-          </div>
-        </div>
-        <div class="color-group">
-          <span class="color-group-label">Dark</span>
-          <div class="color-group-swatches">
-            <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#1e1e1e")}} active{{end}}" data-color="#1e1e1e" style="background:#1e1e1e;" onclick="setCropBgColor(this,'#1e1e1e')" title="Dark"></button>
-            <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#2d2b1f")}} active{{end}}" data-color="#2d2b1f" style="background:#2d2b1f;" onclick="setCropBgColor(this,'#2d2b1f')" title="Warm Dark"></button>
-            <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#1a1f2e")}} active{{end}}" data-color="#1a1f2e" style="background:#1a1f2e;" onclick="setCropBgColor(this,'#1a1f2e')" title="Blue Dark"></button>
-            <button class="color-swatch{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#000000")}} active{{end}}" data-color="#000000" style="background:#000000;" onclick="setCropBgColor(this,'#000000')" title="Black"></button>
-          </div>
-        </div>
-        <div class="color-group">
-          <span class="color-group-label">Custom</span>
-          <div class="color-group-swatches">
-            <label class="color-custom-wrapper" title="Pick a custom color">
-              <input type="color" class="color-custom-input" id="crop-bg-custom"
-                     value="{{if notNil .Song.CropBgColor}}{{derefStr .Song.CropBgColor}}{{else}}#ffffff{{end}}"
-                     onchange="setCropBgColor(null,this.value)" />
-              <svg class="color-custom-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.23-1.21a1 1 0 00-1.42 0 1 1 0 000 1.42l.71.71-8.49 8.49a1 1 0 00-.29.71V19a1 1 0 001 1h2.47a1 1 0 00.71-.29l8.49-8.49.71.71a1 1 0 001.42 0 1 1 0 000-1.42l-1.21-1.23 3.12-3.12a1.004 1.004 0 00.36-.76 1 1 0 00-.48-.77zM6.68 18H5v-1.68l8.03-8.03 1.68 1.68L6.68 18z"/></svg>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-    <p class="edit-toolbar-hint">Drag the bottom edge of each exercise to resize crops.</p>
-    <button class="edit-toolbar-regen" onclick="regeneratePreviews(this)" title="Re-crop from source pages at maximum resolution">🔄 Regenerate HD Previews</button>
+    <p class="edit-toolbar-hint">Drag the bottom edge of each exercise to resize.</p>
   </div>
 
   {{if eq (len .Song.Exercises) 0}}
@@ -128,6 +90,10 @@
             <!-- The visual card: crop image only -->
             <div class="expanded-card"
                  style="border-left-color:{{stageBorder .Stage | safeCSS}}">
+              <!-- Hover edit pencil -->
+              <button class="card-edit-pencil" onclick="event.stopPropagation(); toggleEditExercises()" title="Edit exercises">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+              </button>
               <div class="card-crop-area" onclick="cardCropClick(this.closest('.expanded-card-wrapper'))"
                    {{if notNil $.Song.CropBgColor}}style="background:{{derefStr $.Song.CropBgColor}}"{{end}}>
                 <div class="card-overlay-header">
