@@ -455,6 +455,16 @@ html, body {
   padding:1rem 1.5rem; overflow-y:auto; flex:1; min-height:0;
 }
 .exercise-view.scroll-locked { overflow:hidden; }
+
+/* Smooth transition: returning from editor to practice view */
+.exercise-view.returning-from-editor {
+  animation: practiceSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes practiceSlideIn {
+  from { transform:translateX(40px); opacity:0; }
+  to   { transform:translateX(0); opacity:1; }
+}
+
 .song-header-wrapper { margin-bottom:1rem; }
 .song-header { display:flex; align-items:flex-start; gap:1.25rem; }
 .song-album-art { flex-shrink:0; width:100px; height:100px; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.12); }
@@ -469,9 +479,10 @@ html, body {
   padding:0.25rem 0.6rem; background:#f3f4f6; border-radius:999px;
   font-size:0.8rem; color:#555;
 }
-.meta-link { font-size:0.8rem; color:#ef4444; text-decoration:none; }
-.meta-link:hover { text-decoration:underline; }
-.meta-link.spotify { color:#22c55e; }
+.meta-link { font-size:0.8rem; color:rgba(239,68,68,0.6); text-decoration:none; display:inline-flex; align-items:center; gap:0.25rem; }
+.meta-link:hover { text-decoration:underline; opacity:1; }
+.meta-link.spotify { color:rgba(34,197,94,0.6); }
+.meta-link-icon { flex-shrink:0; vertical-align:middle; }
 .section-nav { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem; }
 .section-pill {
   display:inline-flex; align-items:center; padding:0.3rem 0.75rem;
@@ -612,7 +623,7 @@ html, body {
 }
 .expanded-card {
   display:flex; flex-direction:column; border:none; border-radius:14px;
-  overflow:hidden; transition:box-shadow 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); border-left:4px solid #9ca3af;
+  overflow:hidden; transition:box-shadow 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); border-left:3px solid #9ca3af;
   background:#f5f5f7;
   box-shadow:0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
 }
@@ -804,6 +815,7 @@ html, body {
   position:relative; z-index:50;
   border-top:1px solid rgba(0,0,0,0.06);
 }
+
 .editor-scroll {
   flex:1; overflow-y:auto; padding:20px;
 }

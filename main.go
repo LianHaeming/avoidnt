@@ -73,7 +73,7 @@ func main() {
 	mux.HandleFunc("POST /api/label-exercises", deps.HandleLabelExercises)
 
 	addr := fmt.Sprintf(":%s", port)
-	log.Printf("🎸 Avoidnt listening on port %s", port)
+	log.Printf("Avoidnt listening on http://localhost:%s", port)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
 

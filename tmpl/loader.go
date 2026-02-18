@@ -69,6 +69,7 @@ func Load() *Templates {
 		"hexToRGBA":   hexToRGBA,
 		"stageTint":   func(stage int) string { return hexToRGBA(stageColor(stage), 0.1) },
 		"stageBorder": func(stage int) string { return hexToRGBA(stageColor(stage), 0.35) },
+		"stageText":   func(stage int) string { return hexToRGBA(stageColor(stage), 0.7) },
 
 		// Time
 		"relativeTime":   relativeTime,

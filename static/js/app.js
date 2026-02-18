@@ -123,7 +123,7 @@ function onStageChange(select, songId, exerciseId) {
     const color = colors[newStage] || '#9ca3af';
     select.style.color = color;
     var innerCard = card.querySelector('.expanded-card');
-    if (innerCard) innerCard.style.borderLeftColor = color;
+    if (innerCard) innerCard.style.borderLeftColor = hexToRGBA(color, 0.35);
     card.dataset.stage = newStage;
 
     // Update section nav pill for this exercise's section
@@ -146,7 +146,7 @@ function updateSectionPill(sectionId) {
 
   var colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
   var color = colors[lowest] || '#9ca3af';
-  pill.style.color = color;
+  pill.style.color = hexToRGBA(color, 0.7);
   pill.style.background = hexToRGBA(color, 0.1);
   pill.style.borderColor = hexToRGBA(color, 0.35);
 }
@@ -158,6 +158,16 @@ function hexToRGBA(hex, alpha) {
   const b = parseInt(hex.substring(4, 6), 16);
   return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
+
+// ===== Smooth transition: returning from editor to practice view =====
+document.addEventListener('DOMContentLoaded', function() {
+  var view = document.getElementById('exercise-view');
+  if (view && sessionStorage.getItem('avoidnt_from_editor') === '1') {
+    sessionStorage.removeItem('avoidnt_from_editor');
+    view.classList.add('returning-from-editor');
+    setTimeout(function() { view.classList.remove('returning-from-editor'); }, 400);
+  }
+});
 
 // ===== Keyboard shortcuts =====
 document.addEventListener('keydown', function(e) {

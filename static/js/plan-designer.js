@@ -5,7 +5,9 @@
   const STANDARD_SECTIONS = ['intro', 'verse', 'chorus', 'bridge', 'solo', 'outro'];
   const DIFFICULTY_LABELS = { 1:'Easiest', 2:'Easy', 3:'Medium', 4:'Hard', 5:'Hardest' };
   const STAGE_COLORS = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
+  const STAGE_BORDER_COLORS = { 1:'rgba(239,68,68,0.35)', 2:'rgba(249,115,22,0.35)', 3:'rgba(234,179,8,0.35)', 4:'rgba(132,204,22,0.35)', 5:'rgba(34,197,94,0.35)' };
   const DEFAULT_STAGE_COLOR = '#9ca3af';
+  const DEFAULT_STAGE_BORDER = 'rgba(156,163,175,0.35)';
 
   // State
   let mode, songId, createdAt;
@@ -35,6 +37,56 @@
     mode = root.dataset.mode;
     songId = root.dataset.songId;
     createdAt = new Date().toISOString();
+
+    // Smooth transition: detect navigation from practice view
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('from') === 'practice') {
+      // Clean up URL without reloading
+      window.history.replaceState(null, '', window.location.pathname);
+
+      if (window.innerWidth > 900) {
+        var colEditor = document.getElementById('col-editor');
+        var colPdf = document.getElementById('col-pdf');
+
+        if (colEditor && colPdf) {
+          // Start the editor at full width (mimicking the practice view)
+          // and the PDF hidden underneath — creates the illusion the
+          // practice view is shrinking into the sidebar
+          var targetWidth = Math.round(window.innerWidth * 0.55);
+          targetWidth = Math.min(1200, Math.max(320, targetWidth));
+
+          colEditor.style.width = '100%';
+          colEditor.style.transition = 'none';
+          colPdf.style.opacity = '0';
+          colPdf.style.transition = 'none';
+
+          // Force layout, then animate
+          void colEditor.offsetWidth;
+
+          colEditor.style.transition = 'width 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)';
+          colPdf.style.transition = 'opacity 0.4s ease 0.15s';
+          colEditor.style.width = targetWidth + 'px';
+          colPdf.style.opacity = '1';
+
+          // Clean up inline styles after transition
+          setTimeout(function() {
+            colEditor.style.transition = '';
+            colPdf.style.transition = '';
+            colPdf.style.opacity = '';
+          }, 550);
+        }
+      }
+    } else if (mode === 'edit') {
+      // Default wider sidebar for edit mode (non-animated)
+      if (window.innerWidth > 900) {
+        var colEditor = document.getElementById('col-editor');
+        if (colEditor) {
+          var targetWidth = Math.round(window.innerWidth * 0.55);
+          targetWidth = Math.min(1200, Math.max(320, targetWidth));
+          colEditor.style.width = targetWidth + 'px';
+        }
+      }
+    }
 
     // Parse stage names
     if (root.dataset.stageNames) {
@@ -839,7 +891,7 @@
   }
 
   function buildExerciseCard(ex) {
-    var borderColor = STAGE_COLORS[ex.difficulty] || STAGE_COLORS[1] || DEFAULT_STAGE_COLOR;
+    var borderColor = STAGE_BORDER_COLORS[ex.difficulty] || DEFAULT_STAGE_BORDER;
     var cardLabel = ex.description || '';
 
     var html = '<div class="expanded-card-wrapper" id="card-' + ex.id + '">';
@@ -1408,6 +1460,7 @@
         throw new Error(body?.error || 'Save failed');
       }
       isDirty = false;
+      sessionStorage.setItem('avoidnt_from_editor', '1');
       location.href = '/songs/' + songId;
     } catch(err) {
       const errEl = document.getElementById('pd-save-error');
@@ -1424,6 +1477,7 @@
       showConfirmModal('You have unsaved changes. Are you sure you want to leave?', 'Leave', 'danger', function() {
         isDirty = false; // prevent beforeunload
         if (mode === 'edit') {
+          sessionStorage.setItem('avoidnt_from_editor', '1');
           location.href = '/songs/' + songId;
         } else {
           location.href = '/songs';
@@ -1432,6 +1486,7 @@
       return;
     }
     if (mode === 'edit') {
+      sessionStorage.setItem('avoidnt_from_editor', '1');
       location.href = '/songs/' + songId;
     } else {
       location.href = '/songs';
