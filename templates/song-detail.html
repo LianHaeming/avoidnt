@@ -12,51 +12,252 @@
         <p class="song-artist">{{.Song.Artist}}</p>
         <div class="song-meta-row">
           {{if .Song.Tempo}}<span class="meta-chip">{{printf "%.0f" (derefFloat .Song.Tempo)}} BPM</span>{{end}}
+          <!-- Key chip (placeholder — field not yet on model) -->
+          <!-- <span class="meta-chip">Am</span> -->
+          {{if .Song.JobID}}<button class="meta-link pdf-link" onclick="window.open('/api/songs/{{.Song.ID}}/pdf','_blank')" title="View PDF"><svg class="meta-link-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> PDF</button>{{end}}
           {{if notNil .Song.YoutubeURL}}<a class="meta-link" href="{{derefStr .Song.YoutubeURL}}" target="_blank" rel="noopener"><svg class="meta-link-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.546 12 3.546 12 3.546s-7.505 0-9.377.504A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.504 9.376.504 9.376.504s7.505 0 9.377-.504a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg> YouTube</a>{{end}}
           {{if notNil .Song.SpotifyURL}}<a class="meta-link spotify" href="{{derefStr .Song.SpotifyURL}}" target="_blank" rel="noopener"><svg class="meta-link-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg> Spotify</a>{{end}}
+          <!-- Additional links overflow (placeholder — links array not yet on model) -->
         </div>
       </div>
       <div class="song-header-right">
-        <a class="edit-song-btn" href="/songs/{{.Song.ID}}/edit?from=practice" title="Edit song">
+        <button class="header-icon-btn" id="notes-toggle-btn" onclick="toggleSongNotes()" title="Notes">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </button>
+        <button class="header-icon-btn" id="metronome-toggle-btn" onclick="toggleMetronome()" title="Metronome">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L8 22h8L12 2z"/><line x1="12" y1="10" x2="18" y2="5"/></svg>
+        </button>
+        {{if gt .ExerciseCount 0}}
+        <button class="header-icon-btn" id="stats-toggle-btn" onclick="toggleStats()" title="Stats">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </button>
+        {{end}}
+        <button class="header-icon-btn" id="display-toggle-btn" onclick="toggleDisplayDrawer()" title="Display settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        </button>
+        <a class="header-icon-btn" href="/songs/{{.Song.ID}}/edit?from=practice" title="Edit song">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
         </a>
       </div>
     </div>
 
-    <!-- Section Nav Pills -->
-    {{if gt (len .SectionGroups) 0}}
-    <div class="section-nav">
-      {{range .SectionGroups}}
-        {{if .Label}}
-        <button class="section-pill"
-                data-section-id="{{.Section.ID}}"
-                {{if eq (len .Exercises) 0}}disabled{{end}}
-                style="background:{{stageTint .LowestStage | safeCSS}};border-color:{{stageBorder .LowestStage | safeCSS}};color:{{stageText .LowestStage | safeCSS}}"
-                onclick="document.getElementById('section-{{.Section.ID}}')?.scrollIntoView({behavior:'smooth',block:'start'})"
-                title="{{.Label}}">
-          {{.Label}}
+    <!-- Song Notes (inline slide-down, toggled from header icon) -->
+    <div class="song-notes-section" id="song-notes-section" style="display:none">
+      <textarea class="song-notes-textarea" id="song-notes-textarea" placeholder="Practice observations, things to remember, teacher feedback..." rows="3"></textarea>
+    </div>
+
+    <!-- Metronome Panel (inline slide-down, toggled from header icon) -->
+    <div class="metronome-panel-inline" id="metronome-panel" style="display:none"{{if not .Song.Tempo}} data-default-bpm="120"{{else}} data-default-bpm="{{printf "%.0f" (derefFloat .Song.Tempo)}}"{{end}}>
+      <div class="metronome-panel-row">
+        <div class="metronome-bpm-group">
+          <span class="metronome-bpm-display" id="metronome-bpm-display">{{if .Song.Tempo}}{{printf "%.0f" (derefFloat .Song.Tempo)}}{{else}}120{{end}}</span>
+          <span class="metronome-bpm-label">BPM</span>
+        </div>
+        <input type="range" class="metronome-slider" id="metronome-slider" min="20" max="300" value="{{if .Song.Tempo}}{{printf "%.0f" (derefFloat .Song.Tempo)}}{{else}}120{{end}}" oninput="onMetronomeBpmChange(this.value)" />
+        <button class="metronome-play-btn" id="metronome-play-btn" onclick="toggleMetronomePlay()">
+          <svg class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="icon-stop" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
         </button>
+      </div>
+      <div class="metronome-panel-row metronome-secondary-row">
+        {{if .Song.Tempo}}
+        <div class="metronome-presets">
+          <button class="metronome-preset-btn" onclick="setMetronomePercent(50)">50%</button>
+          <button class="metronome-preset-btn" onclick="setMetronomePercent(75)">75%</button>
+          <button class="metronome-preset-btn active" onclick="setMetronomePercent(100)">100%</button>
+        </div>
+        {{end}}
+        <button class="metronome-tap-btn" onclick="metronomeTap()">Tap</button>
+        <div class="metronome-time-sig">
+          <button class="metronome-sig-btn active" onclick="setTimeSig(this,'4/4')">4/4</button>
+          <button class="metronome-sig-btn" onclick="setTimeSig(this,'3/4')">3/4</button>
+          <button class="metronome-sig-btn" onclick="setTimeSig(this,'6/8')">6/8</button>
+        </div>
+        <div class="metronome-beat-dots" id="metronome-beat-dots">
+          <span class="beat-dot"></span><span class="beat-dot"></span><span class="beat-dot"></span><span class="beat-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Panel (inline slide-down, toggled from header icon) -->
+    {{if gt .ExerciseCount 0}}
+    <div class="stats-panel-inline" id="stats-panel" style="display:none">
+      <div class="progress-detail-grid">
+        <div class="progress-detail-item">
+          <span class="progress-detail-value">{{formatDuration .TotalPracticeTime}}</span>
+          <span class="progress-detail-label">Total practice</span>
+        </div>
+        <div class="progress-detail-item">
+          <span class="progress-detail-value">{{.TotalReps}}</span>
+          <span class="progress-detail-label">Total reps</span>
+        </div>
+        <div class="progress-detail-item">
+          <span class="progress-detail-value">{{.ExerciseCount}}</span>
+          <span class="progress-detail-label">Exercises</span>
+        </div>
+        <div class="progress-detail-item">
+          <span class="progress-detail-value">{{relativeTime .LastPracticed}}</span>
+          <span class="progress-detail-label">Last practiced</span>
+        </div>
+      </div>
+      <div class="progress-stage-breakdown">
+        {{range seq 5}}
+        <div class="progress-stage-row">
+          <span class="progress-stage-dot" style="background:{{stageColor . | safeCSS}}"></span>
+          <span class="progress-stage-name">{{index $.Settings.StageNames (sub . 1)}}</span>
+          <span class="progress-stage-count">{{index $.StageCounts (sub . 1)}}</span>
+        </div>
+        {{end}}
+      </div>
+      <div class="session-history">
+        <div class="session-history-header">
+          <span class="session-history-title">Recent Sessions</span>
+        </div>
+        <div class="session-history-list">
+          <div class="session-history-item">
+            <span class="session-date">Today</span>
+            <span class="session-duration">12 min</span>
+            <span class="session-exercises">4 exercises</span>
+          </div>
+          <div class="session-history-item">
+            <span class="session-date">Yesterday</span>
+            <span class="session-duration">8 min</span>
+            <span class="session-exercises">3 exercises</span>
+          </div>
+          <div class="session-history-item">
+            <span class="session-date">Feb 16</span>
+            <span class="session-duration">22 min</span>
+            <span class="session-exercises">7 exercises</span>
+          </div>
+          <div class="session-history-item">
+            <span class="session-date">Feb 14</span>
+            <span class="session-duration">15 min</span>
+            <span class="session-exercises">5 exercises</span>
+          </div>
+          <div class="session-history-item">
+            <span class="session-date">Feb 12</span>
+            <span class="session-duration">10 min</span>
+            <span class="session-exercises">6 exercises</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{end}}
+
+    <!-- Display Settings Panel (inline slide-down, toggled from header icon) -->
+    <div class="display-panel-inline" id="display-settings-drawer" style="display:none" data-song-id="{{.Song.ID}}">
+      <div class="drawer-group">
+        <span class="drawer-group-title">View</span>
+        <div class="drawer-row">
+          <label class="drawer-label" for="card-scale-slider">Card scale</label>
+          <input type="range" id="card-scale-slider" class="drawer-slider" min="30" max="300" value="100" />
+          <span class="drawer-slider-value" id="card-scale-value">100%</span>
+        </div>
+        <div class="drawer-row">
+          <span class="drawer-label">Card alignment</span>
+          <div class="drawer-segmented-sm">
+            <button class="seg-btn-sm active" data-align="left" onclick="setCardAlignment(this)">Left</button>
+            <button class="seg-btn-sm" data-align="centre" onclick="setCardAlignment(this)">Centre</button>
+          </div>
+        </div>
+      </div>
+      <div class="drawer-group">
+        <span class="drawer-group-title">Appearance</span>
+        <div class="drawer-row">
+          <span class="drawer-label">Crop background</span>
+          <button class="bg-toggle{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#1e1e1e")}} bg-toggle--dark{{end}}" id="bg-toggle" onclick="toggleCropBg()" title="Toggle light/dark background">
+            <span class="bg-toggle-thumb"></span>
+          </button>
+        </div>
+      </div>
+      <div class="drawer-group">
+        <span class="drawer-group-title">Clean View</span>
+        <div class="drawer-row">
+          <label class="drawer-label" for="cv-titles">Exercise titles</label>
+          <label class="drawer-toggle">
+            <input type="checkbox" id="cv-titles" checked onchange="toggleCleanView('titles', this.checked)" />
+            <span class="drawer-toggle-track"><span class="drawer-toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div class="drawer-row">
+          <label class="drawer-label" for="cv-controls">Controls bar</label>
+          <label class="drawer-toggle">
+            <input type="checkbox" id="cv-controls" checked onchange="toggleCleanView('controls', this.checked)" />
+            <span class="drawer-toggle-track"><span class="drawer-toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div class="drawer-row">
+          <label class="drawer-label" for="cv-dividers">Section dividers</label>
+          <label class="drawer-toggle">
+            <input type="checkbox" id="cv-dividers" checked onchange="toggleCleanView('dividers', this.checked)" />
+            <span class="drawer-toggle-track"><span class="drawer-toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div class="drawer-row">
+          <label class="drawer-label" for="cv-stages">Stage indicators</label>
+          <label class="drawer-toggle">
+            <input type="checkbox" id="cv-stages" checked onchange="toggleCleanView('stages', this.checked)" />
+            <span class="drawer-toggle-track"><span class="drawer-toggle-thumb"></span></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Practice Controls -->
+    <div class="practice-controls-bar">
+      <!-- Section Navigation Pills (left) -->
+      {{if gt (len .SectionGroups) 0}}
+      <div class="section-nav">
+        {{range .SectionGroups}}
+          {{if .Label}}
+          <button class="section-pill"
+                  data-section-id="{{.Section.ID}}"
+                  {{if eq (len .Exercises) 0}}disabled{{end}}
+                  style="background:{{stageTint .LowestStage | safeCSS}};border-color:{{stageBorder .LowestStage | safeCSS}};color:{{stageText .LowestStage | safeCSS}}"
+                  onclick="toggleSectionFilter(this)"
+                  title="{{.Label}}">
+            {{.Label}}
+          </button>
+          {{end}}
+        {{end}}
+      </div>
+      {{end}}
+
+      <!-- View Mode + Suggest (right) -->
+      <div class="practice-controls-right">
+        <div class="view-mode-segmented">
+          <button class="view-mode-btn active" data-mode="song-order" onclick="setViewMode(this)">Song order</button>
+          <button class="view-mode-btn" data-mode="needs-work" onclick="setViewMode(this)">Needs work</button>
+          <button class="view-mode-btn" data-mode="by-section" onclick="setViewMode(this)">By section</button>
+        </div>
+        <button class="smart-practice-btn" onclick="toggleSmartPractice(this)" title="Suggest practice order">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <span class="smart-practice-label">Suggest</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Progress Summary Bar (click to open stats panel) -->
+  {{if gt .ExerciseCount 0}}
+  <div class="progress-summary-bar" onclick="toggleStats()">
+    <span class="progress-bar-stat">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      {{formatDuration .TotalPracticeTime}}
+    </span>
+    <div class="progress-stage-bar">
+      {{range seq 5}}
+        {{$count := index $.StageCounts (sub . 1)}}
+        {{if gt $count 0}}
+        <div class="progress-stage-segment" style="flex:{{$count}};background:{{stageColor . | safeCSS}}" title="{{index $.Settings.StageNames (sub . 1)}}: {{$count}}"></div>
         {{end}}
       {{end}}
     </div>
-    {{end}}
-  </header>
-
-  <hr class="header-separator" />
-
-  <!-- Edit Exercises Toolbar -->
-  <div class="edit-exercises-toolbar" id="edit-exercises-toolbar" style="display:none" data-song-id="{{.Song.ID}}">
-    <div class="edit-toolbar-header">
-      <div class="edit-toolbar-left">
-        <span class="edit-toolbar-label">Exercise Background</span>
-        <button class="bg-toggle{{if and (notNil .Song.CropBgColor) (eq (derefStr .Song.CropBgColor) "#1e1e1e")}} bg-toggle--dark{{end}}" id="bg-toggle" onclick="toggleCropBg()" title="Toggle light/dark background">
-          <span class="bg-toggle-thumb"></span>
-        </button>
-      </div>
-      <button class="edit-toolbar-done" onclick="toggleEditExercises()">Done</button>
-    </div>
-    <p class="edit-toolbar-hint">Drag the bottom edge of each exercise to resize.</p>
+    <span class="progress-bar-stat progress-bar-stat-muted">
+      {{relativeTime .LastPracticed}}
+    </span>
   </div>
+  {{end}}
 
   {{if eq (len .Song.Exercises) 0}}
     <div class="empty-state">
@@ -90,10 +291,6 @@
             <!-- The visual card: crop image only -->
             <div class="expanded-card"
                  style="border-left-color:{{stageBorder .Stage | safeCSS}}">
-              <!-- Hover edit pencil -->
-              <button class="card-edit-pencil" onclick="event.stopPropagation(); toggleEditExercises()" title="Edit exercises">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              </button>
               <div class="card-crop-area" onclick="cardCropClick(this.closest('.expanded-card-wrapper'))"
                    {{if notNil $.Song.CropBgColor}}style="background:{{derefStr $.Song.CropBgColor}}"{{end}}>
                 <div class="card-overlay-header">
@@ -110,11 +307,6 @@
                 {{else}}
                   <div class="card-crop-placeholder"><span>🎵</span></div>
                 {{end}}
-
-                <!-- Drag handle for crop resize (visible in edit mode) -->
-                <div class="card-crop-resize-handle" onmousedown="cropResizeStart(event, this)" ontouchstart="cropResizeStart(event, this)">
-                  <span class="resize-handle-bar"></span>
-                </div>
               </div>
             </div>
 

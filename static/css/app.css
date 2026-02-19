@@ -496,7 +496,7 @@ body:has(.dark-mode) { background: #191919; }
 .song-album-art { flex-shrink:0; width:100px; height:100px; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.12); }
 .song-album-art img { display:block; width:100%; height:100%; object-fit:cover; }
 .song-header-left { flex:1; min-width:0; }
-.song-header-right { position:absolute; top:0; right:0; z-index:5; }
+.song-header-right { display:flex; align-items:center; gap:0.25rem; flex-shrink:0; }
 .song-title { margin:0 0 0.25rem; font-size:1.75rem; font-weight:700; color:#1a1a1a; line-height:1.2; }
 .song-artist { margin:0 0 0.5rem; font-size:1rem; color:#666; }
 .song-meta-row { display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; }
@@ -509,7 +509,7 @@ body:has(.dark-mode) { background: #191919; }
 .meta-link:hover { text-decoration:underline; opacity:1; }
 .meta-link.spotify { color:rgba(34,197,94,0.6); }
 .meta-link-icon { flex-shrink:0; vertical-align:middle; }
-.section-nav { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem; }
+.section-nav { display:flex; flex-wrap:wrap; gap:0.5rem; flex:1; min-width:0; }
 .section-pill {
   display:inline-flex; align-items:center; padding:0.3rem 0.75rem;
   font-size:0.8rem; font-weight:600; border:1px solid; border-radius:999px;
@@ -517,14 +517,15 @@ body:has(.dark-mode) { background: #191919; }
 }
 .section-pill:hover { filter:brightness(0.92); }
 .section-pill:disabled, .section-pill.empty { cursor:default; opacity:0.6; }
-.edit-song-btn {
+.header-icon-btn {
   display:flex; align-items:center; justify-content:center;
   width:32px; height:32px; background:transparent; border:none;
   border-radius:8px; cursor:pointer; color:#9ca3af; transition:all 0.15s;
   text-decoration:none;
 }
-.edit-song-btn:hover { background:rgba(0,0,0,0.06); color:#6b7280; }
-.edit-song-btn svg { display:block; }
+.header-icon-btn:hover { background:rgba(0,0,0,0.06); color:#6b7280; }
+.header-icon-btn.active { color:#3b82f6; background:rgba(59,130,246,0.08); }
+.header-icon-btn svg { display:block; }
 
 /* Hover pencil on exercise cards */
 .card-edit-pencil {
@@ -625,6 +626,392 @@ body:has(.dark-mode) { background: #191919; }
 .dark-mode .bg-toggle--dark { background:#636366; }
 .dark-mode .bg-toggle--dark .bg-toggle-thumb { background:#1e1e1e; }
 .header-separator { border:none; border-top:1px solid #e5e7eb; margin:1.25rem 0; }
+
+/* ===== Practice Controls Bar ===== */
+.practice-controls-bar {
+  display:flex; align-items:center; gap:0.65rem; margin-top:1rem; flex-wrap:wrap;
+}
+
+/* Segmented Control: View Mode */
+.view-mode-segmented {
+  display:inline-flex; background:#f3f4f6; border-radius:10px; padding:3px;
+  gap:2px;
+}
+.view-mode-btn {
+  padding:0.35rem 0.85rem; font-size:0.78rem; font-weight:600;
+  border:none; border-radius:8px; cursor:pointer;
+  background:transparent; color:#6b7280;
+  transition:all 0.15s ease; white-space:nowrap;
+}
+.view-mode-btn:hover { color:#374151; }
+.view-mode-btn.active {
+  background:#fff; color:#1d1d1f;
+  box-shadow:0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* Section pills — filter mode additions */
+.section-pill.pill-active {
+  filter:brightness(0.85);
+  box-shadow:0 0 0 2px rgba(0,0,0,0.15);
+}
+
+/* ===== Inline Panels (shared slide-down animation) ===== */
+.stats-panel-inline, .display-panel-inline {
+  animation:drawerSlideDown 0.2s ease;
+  padding:0.75rem 0;
+}
+
+/* ===== Display Settings Drawer ===== */
+.display-settings-drawer, .display-panel-inline {
+  margin-bottom:0.25rem;
+}
+@keyframes drawerSlideDown {
+  from { opacity:0; max-height:0; transform:translateY(-8px); }
+  to   { opacity:1; max-height:500px; transform:translateY(0); }
+}
+
+.drawer-group {
+  padding:0.5rem 0;
+}
+.drawer-group + .drawer-group {
+  border-top:1px solid #f3f4f6;
+}
+.drawer-group-title {
+  display:block; font-size:0.7rem; font-weight:600; color:#9ca3af;
+  text-transform:uppercase; letter-spacing:0.05em;
+  margin-bottom:0.5rem;
+}
+.drawer-row {
+  display:flex; align-items:center; gap:0.75rem;
+  padding:0.4rem 0; min-height:32px;
+}
+.drawer-label {
+  font-size:0.82rem; font-weight:500; color:#374151;
+  flex:1; min-width:0;
+}
+.drawer-slider {
+  width:120px; accent-color:#3b82f6; cursor:pointer;
+}
+.drawer-slider-value {
+  font-size:0.75rem; font-weight:600; color:#6b7280;
+  min-width:3rem; text-align:right;
+}
+
+/* Small segmented control (alignment) */
+.drawer-segmented-sm {
+  display:inline-flex; background:#f3f4f6; border-radius:8px; padding:2px; gap:2px;
+}
+.seg-btn-sm {
+  padding:0.25rem 0.65rem; font-size:0.72rem; font-weight:600;
+  border:none; border-radius:6px; cursor:pointer;
+  background:transparent; color:#6b7280; transition:all 0.15s;
+}
+.seg-btn-sm:hover { color:#374151; }
+.seg-btn-sm.active {
+  background:#fff; color:#1d1d1f;
+  box-shadow:0 1px 2px rgba(0,0,0,0.06);
+}
+
+/* Toggle switch (clean view) */
+.drawer-toggle {
+  position:relative; display:inline-block; cursor:pointer;
+  flex-shrink:0;
+}
+.drawer-toggle input { position:absolute; opacity:0; width:0; height:0; }
+.drawer-toggle-track {
+  display:block; width:36px; height:20px; border-radius:10px;
+  background:#e5e7eb; transition:background 0.2s; position:relative;
+}
+.drawer-toggle-thumb {
+  position:absolute; top:2px; left:2px;
+  width:16px; height:16px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.15);
+  transition:transform 0.2s;
+}
+.drawer-toggle input:checked + .drawer-toggle-track {
+  background:#3b82f6;
+}
+.drawer-toggle input:checked + .drawer-toggle-track .drawer-toggle-thumb {
+  transform:translateX(16px);
+}
+
+/* ===== Dark mode: Practice Controls ===== */
+.dark-mode .view-mode-segmented { background:#1e1e20; }
+.dark-mode .view-mode-btn { color:#86868b; }
+.dark-mode .view-mode-btn:hover { color:#d2d2d7; }
+.dark-mode .view-mode-btn.active {
+  background:#2a2a2c; color:#f5f5f7;
+  box-shadow:0 1px 3px rgba(0,0,0,0.2);
+}
+.dark-mode .section-pill.pill-active {
+  box-shadow:0 0 0 2px rgba(255,255,255,0.2);
+}
+
+/* Dark mode: Display Settings Drawer */
+.dark-mode .drawer-group + .drawer-group { border-color:#2a2a2c; }
+.dark-mode .drawer-group-title { color:#636366; }
+.dark-mode .drawer-label { color:#d2d2d7; }
+.dark-mode .drawer-slider-value { color:#86868b; }
+.dark-mode .drawer-segmented-sm { background:#1e1e20; }
+.dark-mode .seg-btn-sm { color:#86868b; }
+.dark-mode .seg-btn-sm:hover { color:#d2d2d7; }
+.dark-mode .seg-btn-sm.active { background:#2a2a2c; color:#f5f5f7; }
+.dark-mode .drawer-toggle-track { background:#3a3a3c; }
+.dark-mode .drawer-toggle input:checked + .drawer-toggle-track { background:#0a84ff; }
+.dark-mode .drawer-toggle-thumb { background:#d1d5db; }
+
+/* ===== Clean View State Classes ===== */
+.exercise-view.cv-hide-titles .card-overlay-header { display:none; }
+.exercise-view.cv-hide-controls .card-controls-bar { display:none; }
+.exercise-view.cv-hide-dividers .section-divider { display:none; }
+.exercise-view.cv-hide-stages .expanded-card { border-left-color:transparent !important; }
+.exercise-view.cv-hide-stages .card-stage-select { display:none; }
+
+/* ===== Practice Controls Right (segmented + smart practice) ===== */
+.practice-controls-right {
+  display:flex; align-items:center; gap:0.65rem; margin-left:auto; flex-shrink:0;
+}
+.smart-practice-btn {
+  display:inline-flex; align-items:center; gap:0.35rem;
+  padding:0.35rem 0.75rem; font-size:0.78rem; font-weight:600;
+  border:1px solid #e5e7eb; border-radius:8px;
+  background:#fff; color:#6b7280; cursor:pointer;
+  transition:all 0.15s ease; white-space:nowrap;
+}
+.smart-practice-btn:hover { border-color:#d1d5db; color:#374151; background:#f9fafb; }
+.smart-practice-btn.active { background:#fef3c7; border-color:#f59e0b; color:#92400e; }
+.smart-practice-btn svg { flex-shrink:0; }
+.dark-mode .smart-practice-btn { background:#1e1e20; border-color:#2a2a2c; color:#86868b; }
+.dark-mode .smart-practice-btn:hover { border-color:#3a3a3c; color:#d2d2d7; }
+.dark-mode .smart-practice-btn.active { background:#3a2e10; border-color:#f59e0b; color:#fbbf24; }
+
+/* PDF link button style */
+.pdf-link {
+  font-size:0.8rem; color:#6b7280; text-decoration:none;
+  display:inline-flex; align-items:center; gap:0.25rem;
+  cursor:pointer; background:none; border:none; padding:0;
+}
+.pdf-link:hover { color:#374151; text-decoration:underline; }
+.dark-mode .pdf-link { color:#86868b; }
+.dark-mode .pdf-link:hover { color:#d2d2d7; }
+
+/* ===== Progress Summary Bar ===== */
+.progress-summary-bar {
+  display:flex; align-items:center; gap:0.75rem;
+  padding:0.55rem 0; cursor:pointer;
+  user-select:none; -webkit-user-select:none;
+}
+.progress-bar-stat {
+  display:inline-flex; align-items:center; gap:0.3rem;
+  font-size:0.78rem; font-weight:600; color:#374151;
+  white-space:nowrap; flex-shrink:0;
+}
+.progress-bar-stat svg { color:#9ca3af; flex-shrink:0; }
+.progress-bar-stat-muted { color:#9ca3af; font-weight:500; }
+.progress-stage-bar {
+  display:flex; flex:1; height:6px; border-radius:3px;
+  overflow:hidden; background:#f3f4f6; gap:1px;
+}
+.progress-stage-segment { border-radius:2px; min-width:3px; transition:flex 0.3s ease; }
+
+/* Dark mode: Progress Summary Bar */
+.dark-mode .progress-bar-stat { color:#d2d2d7; }
+.dark-mode .progress-bar-stat svg { color:#636366; }
+.dark-mode .progress-bar-stat-muted { color:#636366; }
+.dark-mode .progress-stage-bar { background:#2a2a2c; }
+
+/* ===== Stats Panel (progress + sessions) ===== */
+.progress-detail-grid {
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
+  gap:0.75rem; margin-bottom:0.75rem;
+}
+.progress-detail-item {
+  display:flex; flex-direction:column; gap:0.15rem;
+}
+.progress-detail-value {
+  font-size:1rem; font-weight:700; color:#1d1d1f;
+}
+.progress-detail-label {
+  font-size:0.7rem; font-weight:500; color:#9ca3af;
+  text-transform:uppercase; letter-spacing:0.03em;
+}
+.progress-stage-breakdown {
+  display:flex; flex-direction:column; gap:0.35rem;
+  padding:0.5rem 0; border-top:1px solid #f3f4f6;
+}
+.progress-stage-row {
+  display:flex; align-items:center; gap:0.5rem; font-size:0.8rem;
+}
+.progress-stage-dot {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.progress-stage-name { flex:1; color:#6b7280; font-weight:500; }
+.progress-stage-count { font-weight:700; color:#374151; min-width:1.5rem; text-align:right; }
+
+/* Session History */
+.session-history {
+  border-top:1px solid #f3f4f6; padding-top:0.6rem; margin-top:0.15rem;
+}
+.session-history-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:0.4rem;
+}
+.session-history-title {
+  font-size:0.7rem; font-weight:600; color:#9ca3af;
+  text-transform:uppercase; letter-spacing:0.04em;
+}
+.session-history-list {
+  display:flex; flex-direction:column; gap:0.2rem;
+}
+.session-history-item {
+  display:flex; align-items:center; gap:0.5rem;
+  padding:0.35rem 0.5rem; border-radius:8px;
+  font-size:0.78rem; transition:background 0.12s;
+}
+.session-history-item:hover { background:#f9fafb; }
+.session-date {
+  font-weight:600; color:#374151; min-width:4.5rem;
+}
+.session-duration {
+  color:#6b7280; font-variant-numeric:tabular-nums;
+}
+.session-exercises {
+  margin-left:auto; color:#9ca3af; font-size:0.72rem;
+}
+
+/* Dark mode: Stats Panel */
+.dark-mode .progress-detail-value { color:#f5f5f7; }
+.dark-mode .progress-detail-label { color:#636366; }
+.dark-mode .progress-stage-breakdown { border-color:#2a2a2c; }
+.dark-mode .progress-stage-name { color:#86868b; }
+.dark-mode .progress-stage-count { color:#d2d2d7; }
+.dark-mode .session-history { border-color:#2a2a2c; }
+.dark-mode .session-history-title { color:#636366; }
+.dark-mode .session-date { color:#d2d2d7; }
+.dark-mode .session-duration { color:#86868b; }
+.dark-mode .session-exercises { color:#636366; }
+.dark-mode .session-history-item:hover { background:#1e1e20; }
+
+/* ===== Song Notes (inline in header) ===== */
+.song-notes-section {
+  padding:0.5rem 0; animation:drawerSlideDown 0.2s ease;
+}
+.song-notes-textarea {
+  width:100%; min-height:70px; padding:0.6rem 0.75rem;
+  font-size:0.82rem; line-height:1.6; color:#374151;
+  background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px;
+  resize:vertical; font-family:inherit;
+  transition:border-color 0.15s;
+}
+.song-notes-textarea:focus {
+  outline:none; border-color:#3b82f6;
+  box-shadow:0 0 0 3px rgba(59,130,246,0.1);
+}
+.song-notes-textarea::placeholder { color:#c0c0c4; }
+.dark-mode .song-notes-textarea {
+  background:#1e1e20; border-color:#2a2a2c; color:#d2d2d7;
+}
+.dark-mode .song-notes-textarea:focus { border-color:#0a84ff; box-shadow:0 0 0 3px rgba(10,132,255,0.15); }
+.dark-mode .song-notes-textarea::placeholder { color:#48484a; }
+
+/* ===== Metronome (inline panel in header) ===== */
+.metronome-panel-inline {
+  padding:0.75rem 0; animation:drawerSlideDown 0.2s ease;
+}
+.metronome-panel-row {
+  display:flex; align-items:center; gap:0.65rem;
+}
+.metronome-bpm-group {
+  display:flex; align-items:baseline; gap:0.25rem; flex-shrink:0;
+}
+.metronome-bpm-display {
+  font-size:1.5rem; font-weight:800; color:#1d1d1f;
+  font-variant-numeric:tabular-nums; line-height:1;
+}
+.metronome-bpm-label { font-size:0.6rem; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.04em; }
+.metronome-slider { flex:1; min-width:60px; accent-color:#3b82f6; cursor:pointer; }
+.metronome-play-btn {
+  width:36px; height:36px; border-radius:8px; border:none;
+  background:#3b82f6; color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.15s; flex-shrink:0;
+}
+.metronome-play-btn:hover { background:#2563eb; }
+.metronome-play-btn.playing { background:#ef4444; }
+.metronome-play-btn.playing:hover { background:#dc2626; }
+.metronome-play-btn.playing .icon-play { display:none; }
+.metronome-play-btn.playing .icon-stop { display:block !important; }
+
+.metronome-secondary-row {
+  margin-top:0.5rem; display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center;
+}
+.metronome-presets { display:flex; gap:0.25rem; }
+.metronome-preset-btn {
+  padding:0.2rem 0.5rem; font-size:0.7rem; font-weight:600;
+  border:1px solid #e5e7eb; border-radius:6px;
+  background:#fff; color:#6b7280; cursor:pointer;
+  transition:all 0.15s;
+}
+.metronome-preset-btn:hover { background:#f3f4f6; color:#374151; }
+.metronome-preset-btn.active { background:#eff6ff; border-color:#3b82f6; color:#2563eb; }
+.metronome-tap-btn {
+  padding:0.2rem 0.6rem; font-size:0.72rem; font-weight:600;
+  border:1px solid #e5e7eb; border-radius:6px;
+  background:#f9fafb; color:#6b7280; cursor:pointer;
+  transition:all 0.15s;
+}
+.metronome-tap-btn:hover { background:#f3f4f6; color:#374151; }
+.metronome-tap-btn:active { background:#e5e7eb; }
+.metronome-time-sig { display:flex; gap:0.2rem; }
+.metronome-sig-btn {
+  padding:0.2rem 0.4rem; font-size:0.65rem; font-weight:600;
+  border:1px solid #e5e7eb; border-radius:5px;
+  background:#fff; color:#9ca3af; cursor:pointer;
+  transition:all 0.15s;
+}
+.metronome-sig-btn:hover { color:#6b7280; }
+.metronome-sig-btn.active { background:#f3f4f6; color:#374151; border-color:#d1d5db; }
+.metronome-beat-dots { display:flex; gap:0.4rem; align-items:center; }
+.beat-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:#e5e7eb; transition:background 0.1s;
+}
+.beat-dot.active { background:#3b82f6; }
+.beat-dot:first-child.active { background:#f59e0b; }
+
+/* Dark mode: Metronome */
+.dark-mode .metronome-bpm-display { color:#f5f5f7; }
+.dark-mode .metronome-bpm-label { color:#636366; }
+.dark-mode .metronome-preset-btn { background:#141416; border-color:#2a2a2c; color:#86868b; }
+.dark-mode .metronome-preset-btn:hover { background:#2a2a2c; color:#d2d2d7; }
+.dark-mode .metronome-preset-btn.active { background:#1a2744; border-color:#0a84ff; color:#0a84ff; }
+.dark-mode .metronome-tap-btn { background:#141416; border-color:#2a2a2c; color:#86868b; }
+.dark-mode .metronome-tap-btn:hover { background:#2a2a2c; color:#d2d2d7; }
+.dark-mode .metronome-play-btn { background:#0a84ff; }
+.dark-mode .metronome-play-btn:hover { background:#0071e3; }
+.dark-mode .metronome-play-btn.playing { background:#ff453a; }
+.dark-mode .metronome-sig-btn { background:#141416; border-color:#2a2a2c; color:#636366; }
+.dark-mode .metronome-sig-btn:hover { color:#86868b; }
+.dark-mode .metronome-sig-btn.active { background:#2a2a2c; color:#d2d2d7; border-color:#3a3a3c; }
+.dark-mode .beat-dot { background:#2a2a2c; }
+.dark-mode .beat-dot.active { background:#0a84ff; }
+.dark-mode .beat-dot:first-child.active { background:#ff9f0a; }
+
+@media (max-width:480px) {
+  .smart-practice-label { display:none; }
+  .metronome-secondary-row { gap:0.3rem; }
+  .practice-controls-bar { flex-direction:column; align-items:stretch; gap:0.5rem; }
+  .section-nav { order:1; }
+  .practice-controls-right { order:2; margin-left:0; }
+  .view-mode-segmented { display:flex; flex:1; }
+  .view-mode-btn { padding:0.3rem 0.45rem; font-size:0.7rem; flex:1; text-align:center; }
+  .smart-practice-btn { padding:0.35rem 0.5rem; }
+  .song-header { gap:0.75rem; }
+  .song-title { font-size:1.35rem; }
+  .song-header-right { gap:0.1rem; }
+  .header-icon-btn { width:28px; height:28px; }
+  .header-icon-btn svg { width:14px; height:14px; }
+}
 .mastered-banner {
   padding:0.75rem 1rem; background:rgba(34,197,94,0.1);
   border:1px solid rgba(34,197,94,0.3); border-radius:8px;
@@ -789,8 +1176,9 @@ body:has(.dark-mode) { background: #191919; }
 .dark-mode .expanded-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.15); }
 .dark-mode .card-edit-pencil { background:rgba(30,30,32,0.85); border-color:rgba(255,255,255,0.08); color:#9ca3af; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
 .dark-mode .card-edit-pencil:hover { background:rgba(44,44,46,0.95); color:#f5f5f7; }
-.dark-mode .edit-song-btn { color:#86868b; }
-.dark-mode .edit-song-btn:hover { background:rgba(255,255,255,0.06); color:#f5f5f7; }
+.dark-mode .header-icon-btn { color:#86868b; }
+.dark-mode .header-icon-btn:hover { background:rgba(255,255,255,0.06); color:#f5f5f7; }
+.dark-mode .header-icon-btn.active { color:#0a84ff; background:rgba(10,132,255,0.12); }
 .dark-mode .card-controls-sep { background:#48484a; }
 .dark-mode .card-title-name { color:#f5f5f7; }
 .dark-mode .card-stage-select { background:#1e1e20; border-color:#2a2a2c; color:inherit; }
@@ -829,6 +1217,9 @@ body:has(.dark-mode) { background: #191919; }
   .card-reps-label { font-size:0.7rem; }
   .card-reps-count { font-size:0.8rem; }
   .card-rep-btn { padding:0.2rem 0.4rem; font-size:0.7rem; }
+  /* Segmented control: slightly tighter on small screens */
+  .view-mode-btn { padding:0.3rem 0.6rem; font-size:0.72rem; }
+  .drawer-slider { width:90px; }
 }
 
 /* ===== Plan Designer ===== */

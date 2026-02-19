@@ -182,11 +182,13 @@ document.addEventListener('keydown', function(e) {
     closeCtxMenu();
     closeSongDetailMenu();
     closePractice();
-    // Exit edit mode if active
-    var view = document.getElementById('exercise-view');
-    if (view && view.classList.contains('editing-exercises')) {
-      toggleEditExercises();
+    // Close display settings drawer if open
+    var drawer = document.getElementById('display-settings-drawer');
+    if (drawer && drawer.style.display !== 'none') {
+      drawer.style.display = 'none';
     }
+    // Clear active section filter
+    clearSectionFilter();
   }
 });
 
@@ -521,4 +523,234 @@ function isColorDark(hex) {
   // Perceived luminance
   var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return lum < 0.5;
+}
+
+// ===== View Mode Segmented Control (placeholder) =====
+function setViewMode(btn) {
+  var container = btn.closest('.view-mode-segmented');
+  if (!container) return;
+  container.querySelectorAll('.view-mode-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  // TODO: re-render exercise list based on btn.dataset.mode
+}
+
+// ===== Section Filter Pills =====
+function toggleSectionFilter(btn) {
+  if (btn.disabled) return;
+  var wasActive = btn.classList.contains('pill-active');
+  // Deselect all pills
+  btn.closest('.section-nav').querySelectorAll('.section-pill').forEach(function(p) {
+    p.classList.remove('pill-active');
+  });
+  if (!wasActive) {
+    btn.classList.add('pill-active');
+    applySectionFilter(btn.dataset.sectionId);
+  } else {
+    clearSectionFilter();
+  }
+}
+
+function applySectionFilter(sectionId) {
+  document.querySelectorAll('.section-group').forEach(function(group) {
+    var id = group.id.replace('section-', '');
+    if (id === sectionId) {
+      group.style.display = '';
+      // Hide the section divider inside the active section (redundant when filtering)
+      var divider = group.querySelector('.section-divider');
+      if (divider) divider.style.display = 'none';
+    } else {
+      group.style.display = 'none';
+    }
+  });
+}
+
+function clearSectionFilter() {
+  document.querySelectorAll('.section-group').forEach(function(group) {
+    group.style.display = '';
+    var divider = group.querySelector('.section-divider');
+    if (divider) divider.style.display = '';
+  });
+  document.querySelectorAll('.section-pill.pill-active').forEach(function(p) {
+    p.classList.remove('pill-active');
+  });
+}
+
+// ===== Display Settings Drawer =====
+function toggleDisplayDrawer() {
+  var drawer = document.getElementById('display-settings-drawer');
+  var btn = document.getElementById('display-toggle-btn');
+  if (!drawer) return;
+  var isOpen = drawer.style.display !== 'none';
+  drawer.style.display = isOpen ? 'none' : 'block';
+  if (btn) btn.classList.toggle('active', !isOpen);
+}
+
+// Close panels on Escape
+(function() {
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var panels = [
+        { el: 'display-settings-drawer', btn: 'display-toggle-btn' },
+        { el: 'song-notes-section', btn: 'notes-toggle-btn' },
+        { el: 'metronome-panel', btn: 'metronome-toggle-btn' },
+        { el: 'stats-panel', btn: 'stats-toggle-btn' }
+      ];
+      panels.forEach(function(p) {
+        var el = document.getElementById(p.el);
+        if (el && el.style.display !== 'none') {
+          el.style.display = 'none';
+          var btn = document.getElementById(p.btn);
+          if (btn) btn.classList.remove('active');
+        }
+      });
+    }
+  });
+})();
+
+// ===== Card Scale Slider (placeholder) =====
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    var slider = document.getElementById('card-scale-slider');
+    var valueLabel = document.getElementById('card-scale-value');
+    if (!slider || !valueLabel) return;
+    slider.addEventListener('input', function() {
+      valueLabel.textContent = slider.value + '%';
+      // TODO: apply scale to crop images
+    });
+  });
+})();
+
+// ===== Card Alignment (placeholder) =====
+function setCardAlignment(btn) {
+  var container = btn.closest('.drawer-segmented-sm');
+  if (!container) return;
+  container.querySelectorAll('.seg-btn-sm').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  // TODO: apply alignment btn.dataset.align to exercise cards
+}
+
+// ===== Clean View Toggles (placeholder) =====
+function toggleCleanView(key, checked) {
+  var view = document.getElementById('exercise-view');
+  if (!view) return;
+  var cls = 'cv-hide-' + key;
+  if (checked) {
+    view.classList.remove(cls);
+  } else {
+    view.classList.add(cls);
+  }
+  // TODO: persist via PATCH /api/songs/{songId}/display
+}
+
+// ===== Smart Practice (placeholder) =====
+function toggleSmartPractice(btn) {
+  var isActive = btn.classList.toggle('active');
+  // Deselect view mode segmented when smart practice is active
+  if (isActive) {
+    document.querySelectorAll('.view-mode-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+  } else {
+    // Re-activate "Song order" as default
+    var defaultBtn = document.querySelector('.view-mode-btn[data-mode="song-order"]');
+    if (defaultBtn) defaultBtn.classList.add('active');
+  }
+  // TODO: reorder exercises based on recommendation algorithm
+}
+
+// ===== Progress Summary Bar =====
+function toggleStats() {
+  var panel = document.getElementById('stats-panel');
+  var btn = document.getElementById('stats-toggle-btn');
+  if (!panel) return;
+  var isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (btn) btn.classList.toggle('active', !isOpen);
+}
+
+// Keep old name as alias in case anything calls it
+function toggleProgressExpand() { toggleStats(); }
+
+// ===== Song Notes =====
+function toggleSongNotes() {
+  var section = document.getElementById('song-notes-section');
+  var btn = document.getElementById('notes-toggle-btn');
+  if (!section) return;
+  var isOpen = section.style.display !== 'none';
+  section.style.display = isOpen ? 'none' : 'block';
+  if (btn) btn.classList.toggle('active', !isOpen);
+  if (!isOpen) {
+    var ta = document.getElementById('song-notes-textarea');
+    if (ta) ta.focus();
+  }
+}
+
+// ===== Metronome =====
+function toggleMetronome() {
+  var panel = document.getElementById('metronome-panel');
+  var btn = document.getElementById('metronome-toggle-btn');
+  if (!panel) return;
+  var isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  if (btn) btn.classList.toggle('active', !isOpen);
+}
+
+function onMetronomeBpmChange(val) {
+  var display = document.getElementById('metronome-bpm-display');
+  if (display) display.textContent = val;
+  // Update preset active states
+  var panel = document.getElementById('metronome-panel');
+  var baseBpm = panel ? parseInt(panel.dataset.defaultBpm) : 0;
+  if (baseBpm > 0) {
+    document.querySelectorAll('.metronome-preset-btn').forEach(function(btn) {
+      var pct = parseInt(btn.textContent);
+      var targetBpm = Math.round(baseBpm * pct / 100);
+      btn.classList.toggle('active', parseInt(val) === targetBpm);
+    });
+  }
+}
+
+function setMetronomePercent(pct) {
+  var panel = document.getElementById('metronome-panel');
+  var baseBpm = panel ? parseInt(panel.dataset.defaultBpm) : 120;
+  var bpm = Math.round(baseBpm * pct / 100);
+  var slider = document.getElementById('metronome-slider');
+  if (slider) { slider.value = bpm; }
+  onMetronomeBpmChange(bpm);
+  // Update preset buttons
+  document.querySelectorAll('.metronome-preset-btn').forEach(function(btn) {
+    btn.classList.toggle('active', parseInt(btn.textContent) === pct);
+  });
+}
+
+function toggleMetronomePlay() {
+  var btn = document.getElementById('metronome-play-btn');
+  if (!btn) return;
+  btn.classList.toggle('playing');
+  // TODO: actual Web Audio API metronome implementation
+}
+
+function metronomeTap() {
+  // TODO: tap tempo implementation
+}
+
+function setTimeSig(btn, sig) {
+  btn.closest('.metronome-time-sig').querySelectorAll('.metronome-sig-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  // Update beat dots count
+  var dotsContainer = document.getElementById('metronome-beat-dots');
+  if (!dotsContainer) return;
+  var beats = sig === '3/4' ? 3 : sig === '6/8' ? 6 : 4;
+  dotsContainer.innerHTML = '';
+  for (var i = 0; i < beats; i++) {
+    var dot = document.createElement('span');
+    dot.className = 'beat-dot';
+    dotsContainer.appendChild(dot);
+  }
 }

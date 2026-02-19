@@ -9,9 +9,14 @@ import (
 
 // SongDetailData is template data for the song detail page.
 type SongDetailData struct {
-	Settings      models.UserSettings
-	Song          models.Song
-	SectionGroups []SectionGroup
+	Settings          models.UserSettings
+	Song              models.Song
+	SectionGroups     []SectionGroup
+	TotalPracticeTime int     // total seconds across all exercises
+	TotalReps         int     // total reps across all exercises
+	LastPracticed     *string // most recent lastPracticedAt
+	StageCounts       [5]int  // count of exercises at each stage (index 0 = stage 1)
+	ExerciseCount     int
 }
 
 // SectionGroup groups exercises under a section label.
@@ -39,10 +44,26 @@ func (d *Deps) HandleSongDetail(w http.ResponseWriter, r *http.Request) {
 	settings := d.Settings.Get()
 	groups := buildSectionGroups(song)
 
+	// Compute aggregate stats
+	var totalTime, totalReps int
+	var stageCounts [5]int
+	for _, ex := range song.Exercises {
+		totalTime += ex.TotalPracticedSeconds
+		totalReps += ex.TotalReps
+		if ex.Stage >= 1 && ex.Stage <= 5 {
+			stageCounts[ex.Stage-1]++
+		}
+	}
+
 	data := SongDetailData{
-		Settings:      settings,
-		Song:          *song,
-		SectionGroups: groups,
+		Settings:          settings,
+		Song:              *song,
+		SectionGroups:     groups,
+		TotalPracticeTime: totalTime,
+		TotalReps:         totalReps,
+		LastPracticed:     song.LastPracticed(),
+		StageCounts:       stageCounts,
+		ExerciseCount:     len(song.Exercises),
 	}
 
 	d.render(w, "song-detail.html", data)
