@@ -258,10 +258,10 @@ document.addEventListener('click', function(e) {
 
   document.addEventListener('DOMContentLoaded', function() {
     // Song cards on browse page: swap in Spotify album art
-    document.querySelectorAll('.song-card[data-spotify-url]').forEach(function(card) {
+    document.querySelectorAll('.song-card[data-spotify-url], .continue-card[data-spotify-url], .attention-card[data-spotify-url]').forEach(function(card) {
       var spotifyUrl = card.getAttribute('data-spotify-url');
       if (!spotifyUrl) return;
-      var container = card.querySelector('.card-thumbnail');
+      var container = card.querySelector('.card-thumbnail, .continue-thumbnail, .attention-art');
       if (!container) return;
       // Show spinner immediately while waiting for Spotify art
       container.innerHTML = '<div class="thumbnail-spinner"></div>';

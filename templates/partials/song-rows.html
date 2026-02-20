@@ -1,36 +1,36 @@
 {{define "song-rows-inner"}}
-{{if eq (len .Rows) 0}}
-  <div class="empty-state">
-    <div class="empty-icon">🎸</div>
-    <h3>No songs yet</h3>
-    <p>Upload a PDF to start building your practice plan.</p>
-    <button class="retry-btn" onclick="location.href='/songs/new'">Add Song</button>
+{{if eq (len .AllSongs) 0}}
+  <div class="library-no-results">
+    <p class="no-results-text">No songs match</p>
   </div>
 {{else}}
-  <div class="category-rows">
-    {{range .Rows}}
-    <div class="category-row">
-      <h2 class="row-title">{{.Title}}</h2>
-      <div class="row-scroll-container">
-        <div class="row-scroller">
-          {{range .Songs}}
-          <div class="song-card"
-               onclick="location.href='/songs/{{.ID}}'"
-               title="{{.Title}}{{if .Artist}} — {{.Artist}}{{end}}"
-               {{if notNil .SpotifyURL}}data-spotify-url="{{derefStr .SpotifyURL}}"{{end}}>
-            <div class="card-thumbnail">
-              {{if and .JobID (gt .PageCount 0)}}
-                <img src="/api/pages/{{.JobID}}/1" alt="{{.Title}}" class="thumbnail-img" loading="lazy" />
-              {{else}}
-                <div class="thumbnail-placeholder">🎵</div>
-              {{end}}
-            </div>
-            <div class="card-info">
-              <span class="card-title">{{.Title}}</span>
-              {{if .Artist}}<span class="card-artist">{{.Artist}}</span>{{end}}
-            </div>
+  <div class="library-grid">
+    {{range .AllSongs}}
+    <div class="song-card library-song"
+         onclick="location.href='/songs/{{.ID}}'"
+         title="{{.Title}}{{if .Artist}} — {{.Artist}}{{end}}"
+         data-title="{{lower .Title}}"
+         data-artist="{{lower .Artist}}"
+         data-mastered="{{.MasteredCount}}"
+         data-total="{{.ExerciseCount}}"
+         data-last-practiced="{{derefStr .LastPracticedAt}}"
+         data-created="{{.CreatedAt}}"
+         {{if notNil .SpotifyURL}}data-spotify-url="{{derefStr .SpotifyURL}}"{{end}}>
+      <div class="card-thumbnail">
+        {{if and .JobID (gt .PageCount 0)}}
+          <img src="/api/pages/{{.JobID}}/1" alt="{{.Title}}" class="thumbnail-img" loading="lazy" />
+        {{else}}
+          <div class="thumbnail-placeholder">🎵</div>
+        {{end}}
+      </div>
+      <div class="card-info">
+        <span class="card-title">{{.Title}}</span>
+        {{if .Artist}}<span class="card-artist">{{.Artist}}</span>{{end}}
+        <div class="progress-row">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
           </div>
-          {{end}}
+          <span class="progress-fraction progress-fraction-sm">{{.MasteredCount}}/{{.ExerciseCount}}</span>
         </div>
       </div>
     </div>

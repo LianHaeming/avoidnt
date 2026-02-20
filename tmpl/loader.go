@@ -52,6 +52,12 @@ func Load(assetVer string) *Templates {
 		"itoa": func(i int) string { return strconv.Itoa(i) },
 		"add":  func(a, b int) int { return a + b },
 		"sub":  func(a, b int) int { return a - b },
+		"pctFloat": func(num, denom int) float64 {
+			if denom == 0 {
+				return 0
+			}
+			return float64(num) / float64(denom) * 100
+		},
 
 		// Strings
 		"lower":      strings.ToLower,

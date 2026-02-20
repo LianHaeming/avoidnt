@@ -56,16 +56,18 @@ type Song struct {
 
 // SongSummary is used for the browse/list view.
 type SongSummary struct {
-	ID              string  `json:"id"`
-	Title           string  `json:"title"`
-	Artist          string  `json:"artist"`
-	JobID           string  `json:"jobId"`
-	PageCount       int     `json:"pageCount"`
-	CreatedAt       string  `json:"createdAt"`
-	ExerciseCount   int     `json:"exerciseCount"`
-	LowestStage     *int    `json:"lowestStage"`
-	LastPracticedAt *string `json:"lastPracticedAt"`
-	SpotifyURL      *string `json:"spotifyUrl,omitempty"`
+	ID              string   `json:"id"`
+	Title           string   `json:"title"`
+	Artist          string   `json:"artist"`
+	JobID           string   `json:"jobId"`
+	PageCount       int      `json:"pageCount"`
+	CreatedAt       string   `json:"createdAt"`
+	ExerciseCount   int      `json:"exerciseCount"`
+	MasteredCount   int      `json:"masteredCount"`
+	LowestStage     *int     `json:"lowestStage"`
+	LastPracticedAt *string  `json:"lastPracticedAt"`
+	SpotifyURL      *string  `json:"spotifyUrl,omitempty"`
+	Tags            []string `json:"tags,omitempty"`
 }
 
 // LowestStage computes the minimum stage across exercises.
@@ -97,6 +99,12 @@ func (s *Song) LastPracticed() *string {
 
 // ToSummary converts a Song to a SongSummary.
 func (s *Song) ToSummary() SongSummary {
+	mastered := 0
+	for _, ex := range s.Exercises {
+		if ex.Stage >= 5 {
+			mastered++
+		}
+	}
 	return SongSummary{
 		ID:              s.ID,
 		Title:           s.Title,
@@ -105,6 +113,7 @@ func (s *Song) ToSummary() SongSummary {
 		PageCount:       s.PageCount,
 		CreatedAt:       s.CreatedAt,
 		ExerciseCount:   len(s.Exercises),
+		MasteredCount:   mastered,
 		LowestStage:     s.LowestStage(),
 		LastPracticedAt: s.LastPracticed(),
 		SpotifyURL:      s.SpotifyURL,

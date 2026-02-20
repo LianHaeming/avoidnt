@@ -1,22 +1,187 @@
 {{define "content"}}
 <div class="home-view">
-  <!-- Welcome -->
-  <div class="home-greeting">
-    <h2 class="greeting-text">Welcome back, {{.Settings.DisplayName}}!</h2>
-  </div>
 
-  <!-- Search Bar (hidden by default, shown via JS) -->
-  <div class="search-bar" id="search-bar" style="display:none">
-    <input type="text" id="search-input" class="search-input" placeholder="Search songs..."
-           hx-get="/api/songs" hx-trigger="keyup changed delay:300ms" hx-target="#song-rows"
-           hx-include="this" name="q" autocomplete="off" />
-    <button class="search-close" onclick="closeSearch()">&times;</button>
-  </div>
+  {{/* Section 2: Continue Practicing */}}
+  {{if gt (len .ContinuePracticing) 0}}
+  <section class="library-section">
+    <h2 class="section-title">Continue Practicing</h2>
+    <div class="continue-scroll">
+      {{range .ContinuePracticing}}
+      <div class="continue-card"
+           onclick="location.href='/songs/{{.ID}}'"
+           {{if notNil .SpotifyURL}}data-spotify-url="{{derefStr .SpotifyURL}}"{{end}}>
+        <div class="continue-thumbnail">
+          {{if and .JobID (gt .PageCount 0)}}
+            <img src="/api/pages/{{.JobID}}/1" alt="{{.Title}}" class="thumbnail-img" loading="lazy" />
+          {{else}}
+            <div class="thumbnail-placeholder">🎵</div>
+          {{end}}
+        </div>
+        <div class="continue-info">
+          <span class="continue-title">{{.Title}}</span>
+          {{if .Artist}}<span class="continue-artist">{{.Artist}}</span>{{end}}
+          <div class="progress-row">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
+            </div>
+            <span class="progress-fraction">{{.MasteredCount}}/{{.ExerciseCount}}</span>
+          </div>
+          <span class="continue-time">{{relativeTime .LastPracticedAt}}</span>
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
 
-  <!-- Song Rows Container -->
-  <div id="song-rows">
-    {{template "song-rows-inner" .}}
-  </div>
+  {{/* Section 3: Needs Attention */}}
+  {{if gt (len .NeedsAttention) 0}}
+  <section class="library-section">
+    <h2 class="section-title">Needs Attention</h2>
+    <div class="attention-scroll">
+      {{range .NeedsAttention}}
+      <div class="attention-card"
+           onclick="location.href='/songs/{{.ID}}'"
+           {{if notNil .SpotifyURL}}data-spotify-url="{{derefStr .SpotifyURL}}"{{end}}>
+        <div class="attention-art">
+          {{if and .JobID (gt .PageCount 0)}}
+            <img src="/api/pages/{{.JobID}}/1" alt="{{.Title}}" class="thumbnail-img" loading="lazy" />
+          {{else}}
+            <div class="thumbnail-placeholder-sm">🎵</div>
+          {{end}}
+        </div>
+        <div class="attention-info">
+          <span class="attention-title">{{.Title}}</span>
+          <div class="progress-row">
+            <div class="progress-bar progress-bar-sm">
+              <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
+            </div>
+            <span class="progress-fraction">{{.MasteredCount}}/{{.ExerciseCount}}</span>
+          </div>
+          <span class="attention-time">{{relativeTime .LastPracticedAt}}</span>
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{/* Section 4: All Songs */}}
+  <section class="library-section library-all-songs">
+    <div class="all-songs-header">
+      <h2 class="section-title">All Songs</h2>
+      <div class="all-songs-controls">
+        <div class="library-search">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="library-search-input" class="library-search-input" placeholder="Search songs..." autocomplete="off" />
+          <button class="library-search-clear" id="library-search-clear" style="display:none">&times;</button>
+        </div>
+        <div class="filter-chips" id="filter-chips">
+          <button class="filter-chip active" data-filter="all">All</button>
+          <button class="filter-chip" data-filter="in-progress">In Progress</button>
+          <button class="filter-chip" data-filter="mastered">Mastered</button>
+          <button class="filter-chip" data-filter="not-started">Not Started</button>
+        </div>
+        <div class="sort-dropdown">
+          <button class="sort-btn" id="sort-btn">
+            <span id="sort-label">Last Practiced</span>
+            <svg class="sort-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="sort-menu" id="sort-menu">
+            <button class="sort-option active" data-sort="last-practiced">Last Practiced</button>
+            <button class="sort-option" data-sort="alphabetical">Alphabetical</button>
+            <button class="sort-option" data-sort="date-added">Date Added</button>
+            <button class="sort-option" data-sort="progress">Progress</button>
+          </div>
+        </div>
+        <div class="view-toggle">
+          <button class="view-btn active" data-view="grid" title="Grid view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </button>
+          <button class="view-btn" data-view="list" title="List view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {{if eq (len .AllSongs) 0}}
+    <div class="empty-state">
+      <h3>No songs yet</h3>
+      <p>Add your first song to get started.</p>
+      <button class="retry-btn" onclick="location.href='/songs/new'">Add Song</button>
+    </div>
+    {{else}}
+    <div class="library-no-results" id="library-no-results" style="display:none">
+      <p class="no-results-text">No songs match</p>
+    </div>
+
+    {{/* Grid View */}}
+    <div class="library-grid" id="library-grid">
+      {{range .AllSongs}}
+      <div class="song-card library-song"
+           onclick="location.href='/songs/{{.ID}}'"
+           title="{{.Title}}{{if .Artist}} — {{.Artist}}{{end}}"
+           data-title="{{lower .Title}}"
+           data-artist="{{lower .Artist}}"
+           data-mastered="{{.MasteredCount}}"
+           data-total="{{.ExerciseCount}}"
+           data-last-practiced="{{derefStr .LastPracticedAt}}"
+           data-created="{{.CreatedAt}}"
+           {{if notNil .SpotifyURL}}data-spotify-url="{{derefStr .SpotifyURL}}"{{end}}>
+        <div class="card-thumbnail">
+          {{if and .JobID (gt .PageCount 0)}}
+            <img src="/api/pages/{{.JobID}}/1" alt="{{.Title}}" class="thumbnail-img" loading="lazy" />
+          {{else}}
+            <div class="thumbnail-placeholder">🎵</div>
+          {{end}}
+        </div>
+        <div class="card-info">
+          <span class="card-title">{{.Title}}</span>
+          {{if .Artist}}<span class="card-artist">{{.Artist}}</span>{{end}}
+          <div class="progress-row">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
+            </div>
+            <span class="progress-fraction progress-fraction-sm">{{.MasteredCount}}/{{.ExerciseCount}}</span>
+          </div>
+        </div>
+      </div>
+      {{end}}
+    </div>
+
+    {{/* List View (hidden by default) */}}
+    <div class="library-list" id="library-list" style="display:none">
+      {{range .AllSongs}}
+      <div class="list-row library-song"
+           onclick="location.href='/songs/{{.ID}}'"
+           data-title="{{lower .Title}}"
+           data-artist="{{lower .Artist}}"
+           data-mastered="{{.MasteredCount}}"
+           data-total="{{.ExerciseCount}}"
+           data-last-practiced="{{derefStr .LastPracticedAt}}"
+           data-created="{{.CreatedAt}}"
+           {{if notNil .SpotifyURL}}data-spotify-url="{{derefStr .SpotifyURL}}"{{end}}>
+        <div class="list-art">
+          {{if and .JobID (gt .PageCount 0)}}
+            <img src="/api/pages/{{.JobID}}/1" alt="{{.Title}}" class="thumbnail-img" loading="lazy" />
+          {{else}}
+            <div class="thumbnail-placeholder-sm">🎵</div>
+          {{end}}
+        </div>
+        <span class="list-title">{{.Title}}</span>
+        <span class="list-artist">{{if .Artist}}{{.Artist}}{{else}}—{{end}}</span>
+        <div class="progress-row list-progress">
+          <div class="progress-bar progress-bar-sm">
+            <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
+          </div>
+          <span class="progress-fraction progress-fraction-sm">{{.MasteredCount}}/{{.ExerciseCount}}</span>
+        </div>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+  </section>
 </div>
 
 <!-- FAB -->
@@ -26,5 +191,173 @@
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 </button>
+
+<script>
+(function() {
+  // ===== Library client-side filtering, sorting, view toggle =====
+  const searchInput = document.getElementById('library-search-input');
+  const searchClear = document.getElementById('library-search-clear');
+  const gridContainer = document.getElementById('library-grid');
+  const listContainer = document.getElementById('library-list');
+  const noResults = document.getElementById('library-no-results');
+  const filterChips = document.querySelectorAll('.filter-chip');
+  const sortBtn = document.getElementById('sort-btn');
+  const sortMenu = document.getElementById('sort-menu');
+  const sortLabel = document.getElementById('sort-label');
+  const sortOptions = document.querySelectorAll('.sort-option');
+  const viewBtns = document.querySelectorAll('.view-btn');
+
+  if (!gridContainer) return;
+
+  let currentFilter = 'all';
+  let currentSort = localStorage.getItem('library_sort') || 'last-practiced';
+  let currentView = localStorage.getItem('library_view') || 'grid';
+
+  // Init sort label
+  const sortLabels = {'last-practiced':'Last Practiced','alphabetical':'Alphabetical','date-added':'Date Added','progress':'Progress'};
+  sortLabel.textContent = sortLabels[currentSort] || 'Last Practiced';
+  sortOptions.forEach(o => o.classList.toggle('active', o.dataset.sort === currentSort));
+
+  // Init view
+  applyView(currentView);
+  viewBtns.forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
+
+  // Search
+  let searchTimer;
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimer);
+      searchClear.style.display = this.value ? 'block' : 'none';
+      searchTimer = setTimeout(applyFilters, 150);
+    });
+  }
+  if (searchClear) {
+    searchClear.addEventListener('click', function() {
+      searchInput.value = '';
+      searchClear.style.display = 'none';
+      applyFilters();
+    });
+  }
+
+  // Filter chips
+  filterChips.forEach(chip => {
+    chip.addEventListener('click', function() {
+      const filter = this.dataset.filter;
+      // Progress filters are mutually exclusive
+      if (['all','in-progress','mastered','not-started'].includes(filter)) {
+        filterChips.forEach(c => {
+          if (['all','in-progress','mastered','not-started'].includes(c.dataset.filter)) {
+            c.classList.remove('active');
+          }
+        });
+        this.classList.add('active');
+        currentFilter = filter;
+      }
+      applyFilters();
+    });
+  });
+
+  // Sort
+  sortBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    sortMenu.classList.toggle('open');
+  });
+  document.addEventListener('click', () => sortMenu.classList.remove('open'));
+  sortOptions.forEach(opt => {
+    opt.addEventListener('click', function(e) {
+      e.stopPropagation();
+      currentSort = this.dataset.sort;
+      localStorage.setItem('library_sort', currentSort);
+      sortLabel.textContent = sortLabels[currentSort];
+      sortOptions.forEach(o => o.classList.toggle('active', o === this));
+      sortMenu.classList.remove('open');
+      applySort();
+    });
+  });
+
+  // View toggle
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      currentView = this.dataset.view;
+      localStorage.setItem('library_view', currentView);
+      viewBtns.forEach(b => b.classList.toggle('active', b === this));
+      applyView(currentView);
+    });
+  });
+
+  function applyView(view) {
+    if (gridContainer) gridContainer.style.display = view === 'grid' ? '' : 'none';
+    if (listContainer) listContainer.style.display = view === 'list' ? '' : 'none';
+  }
+
+  function applyFilters() {
+    const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+    const containers = [gridContainer, listContainer];
+    let visibleCount = 0;
+
+    containers.forEach(container => {
+      if (!container) return;
+      const items = container.querySelectorAll('.library-song');
+      items.forEach(item => {
+        const title = item.dataset.title || '';
+        const artist = item.dataset.artist || '';
+        const mastered = parseInt(item.dataset.mastered) || 0;
+        const total = parseInt(item.dataset.total) || 0;
+
+        let matchSearch = !q || title.includes(q) || artist.includes(q);
+        let matchFilter = true;
+        if (currentFilter === 'in-progress') {
+          matchFilter = total > 0 && mastered < total && mastered > 0;
+        } else if (currentFilter === 'mastered') {
+          matchFilter = total > 0 && mastered === total;
+        } else if (currentFilter === 'not-started') {
+          matchFilter = total === 0 || mastered === 0;
+        }
+
+        const visible = matchSearch && matchFilter;
+        item.style.display = visible ? '' : 'none';
+        if (visible) visibleCount++;
+      });
+    });
+
+    if (noResults) {
+      // Divide by 2 because we count both grid and list items
+      noResults.style.display = (visibleCount / 2) === 0 ? '' : 'none';
+    }
+  }
+
+  function applySort() {
+    [gridContainer, listContainer].forEach(container => {
+      if (!container) return;
+      const items = Array.from(container.querySelectorAll('.library-song'));
+      items.sort((a, b) => {
+        switch (currentSort) {
+          case 'alphabetical':
+            return (a.dataset.title || '').localeCompare(b.dataset.title || '');
+          case 'date-added':
+            return (b.dataset.created || '').localeCompare(a.dataset.created || '');
+          case 'progress': {
+            const pA = (parseInt(a.dataset.total)||1) > 0 ? (parseInt(a.dataset.mastered)||0)/(parseInt(a.dataset.total)||1) : 0;
+            const pB = (parseInt(b.dataset.total)||1) > 0 ? (parseInt(b.dataset.mastered)||0)/(parseInt(b.dataset.total)||1) : 0;
+            return pA - pB;
+          }
+          default: { // last-practiced
+            const lpA = a.dataset.lastPracticed || '';
+            const lpB = b.dataset.lastPracticed || '';
+            if (!lpA && !lpB) return (a.dataset.title||'').localeCompare(b.dataset.title||'');
+            if (!lpA) return 1;
+            if (!lpB) return -1;
+            return lpB.localeCompare(lpA);
+          }
+        }
+      });
+      items.forEach(item => container.appendChild(item));
+    });
+  }
+
+  // Apply initial sort
+  applySort();
+})();
+</script>
 
 {{end}}

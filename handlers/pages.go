@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/LianHaeming/avoidnt/models"
 )
@@ -19,9 +20,12 @@ func (d *Deps) HandleHome(w http.ResponseWriter, r *http.Request) {
 
 // SongsPageData is the template data for the songs list page.
 type SongsPageData struct {
-	Settings models.UserSettings
-	Rows     []SongRow
-	AllSongs []models.SongSummary
+	Settings           models.UserSettings
+	ContinuePracticing []models.SongSummary
+	NeedsAttention     []models.SongSummary
+	AllSongs           []models.SongSummary
+	// Keep legacy Rows for partial compatibility
+	Rows []SongRow
 }
 
 // SongRow is a Netflix-style category row.
@@ -44,18 +48,36 @@ func (d *Deps) HandleSongsList(w http.ResponseWriter, r *http.Request) {
 		summaries[i] = songs[i].ToSummary()
 	}
 
-	rows := buildRows(summaries)
+	continuePracticing, needsAttention := buildLibrarySections(summaries)
+
+	// All songs sorted alphabetically by default
+	allSorted := make([]models.SongSummary, len(summaries))
+	copy(allSorted, summaries)
+	sort.Slice(allSorted, func(i, j int) bool {
+		// Default: last practiced first, never-practiced at bottom
+		if allSorted[i].LastPracticedAt == nil && allSorted[j].LastPracticedAt == nil {
+			return allSorted[i].Title < allSorted[j].Title
+		}
+		if allSorted[i].LastPracticedAt == nil {
+			return false
+		}
+		if allSorted[j].LastPracticedAt == nil {
+			return true
+		}
+		return *allSorted[i].LastPracticedAt > *allSorted[j].LastPracticedAt
+	})
 
 	data := SongsPageData{
-		Settings: settings,
-		Rows:     rows,
-		AllSongs: summaries,
+		Settings:           settings,
+		ContinuePracticing: continuePracticing,
+		NeedsAttention:     needsAttention,
+		AllSongs:           allSorted,
 	}
 
 	d.render(w, "songs.html", data)
 }
 
-// HandleSongsListPartial returns just the song rows partial (for htmx search).
+// HandleSongsListPartial returns just the all-songs list partial (for htmx search).
 func (d *Deps) HandleSongsListPartial(w http.ResponseWriter, r *http.Request) {
 	songs, err := d.Songs.ListAll()
 	if err != nil {
@@ -80,43 +102,85 @@ func (d *Deps) HandleSongsListPartial(w http.ResponseWriter, r *http.Request) {
 		summaries = filtered
 	}
 
-	rows := buildRows(summaries)
+	// Sort by last practiced (default)
+	sort.Slice(summaries, func(i, j int) bool {
+		if summaries[i].LastPracticedAt == nil && summaries[j].LastPracticedAt == nil {
+			return summaries[i].Title < summaries[j].Title
+		}
+		if summaries[i].LastPracticedAt == nil {
+			return false
+		}
+		if summaries[j].LastPracticedAt == nil {
+			return true
+		}
+		return *summaries[i].LastPracticedAt > *summaries[j].LastPracticedAt
+	})
 
 	d.render(w, "partials/song-rows.html", struct {
-		Rows     []SongRow
 		AllSongs []models.SongSummary
 		Query    string
-	}{Rows: rows, AllSongs: summaries, Query: q})
+	}{AllSongs: summaries, Query: q})
 }
 
-func buildRows(summaries []models.SongSummary) []SongRow {
-	var rows []SongRow
+// buildLibrarySections computes the "Continue Practicing" and "Needs Attention" lists.
+func buildLibrarySections(summaries []models.SongSummary) (continuePracticing, needsAttention []models.SongSummary) {
+	now := time.Now()
+	fourteenDays := 14 * 24 * time.Hour
 
-	// Recently Practiced
-	var recent []models.SongSummary
 	for _, s := range summaries {
-		if s.LastPracticedAt != nil {
-			recent = append(recent, s)
+		// Skip songs where all exercises are mastered (Stage 5)
+		if s.ExerciseCount == 0 || s.MasteredCount == s.ExerciseCount {
+			continue
+		}
+
+		if s.LastPracticedAt == nil {
+			// Never practiced — could be "needs attention" but only if it has exercises
+			needsAttention = append(needsAttention, s)
+			continue
+		}
+
+		t, err := time.Parse(time.RFC3339, *s.LastPracticedAt)
+		if err != nil {
+			t, err = time.Parse("2006-01-02T15:04:05.000Z", *s.LastPracticedAt)
+			if err != nil {
+				continue
+			}
+		}
+
+		age := now.Sub(t)
+		if age <= fourteenDays {
+			continuePracticing = append(continuePracticing, s)
+		} else {
+			needsAttention = append(needsAttention, s)
 		}
 	}
-	sort.Slice(recent, func(i, j int) bool {
-		return *recent[i].LastPracticedAt > *recent[j].LastPracticedAt
+
+	// Continue Practicing: most recent first, take top 5
+	sort.Slice(continuePracticing, func(i, j int) bool {
+		return *continuePracticing[i].LastPracticedAt > *continuePracticing[j].LastPracticedAt
 	})
-	if len(recent) > 0 {
-		rows = append(rows, SongRow{Title: "Recently Practiced", Songs: recent})
+	if len(continuePracticing) > 5 {
+		continuePracticing = continuePracticing[:5]
 	}
 
-	// All Songs — always show every song so new/unpracticed ones are visible
-	if len(summaries) > 0 {
-		all := make([]models.SongSummary, len(summaries))
-		copy(all, summaries)
-		sort.Slice(all, func(i, j int) bool {
-			return all[i].Title < all[j].Title
-		})
-		rows = append(rows, SongRow{Title: "All Songs", Songs: all})
+	// Needs Attention: oldest first (most neglected), take top 8
+	sort.Slice(needsAttention, func(i, j int) bool {
+		if needsAttention[i].LastPracticedAt == nil && needsAttention[j].LastPracticedAt == nil {
+			return needsAttention[i].Title < needsAttention[j].Title
+		}
+		if needsAttention[i].LastPracticedAt == nil {
+			return true // never practiced = most neglected
+		}
+		if needsAttention[j].LastPracticedAt == nil {
+			return false
+		}
+		return *needsAttention[i].LastPracticedAt < *needsAttention[j].LastPracticedAt
+	})
+	if len(needsAttention) > 8 {
+		needsAttention = needsAttention[:8]
 	}
 
-	return rows
+	return
 }
 
 // SettingsPageData is the template data for the settings page.
