@@ -441,20 +441,107 @@ function cropZoomBtn(btn, delta) {
   }
 }
 
-// Apply a scale value to all crop images in a card using CSS transform (centered)
+// Apply a scale value to all crop images in a card.
+// Default mode: sets image width as a percentage of the card (card height follows naturally).
+// Full-fit mode: sets image width in absolute pixels based on natural image size, and
+// constrains the card wrapper to that width so the card wraps the crop.
 function applyCropScaleToCard(card, scale) {
-  var t = scale === 100 ? '' : 'scale(' + (scale / 100) + ')';
-  card.querySelectorAll('.card-crop-img').forEach(function(img) {
-    img.style.transform = t;
+  var fit = card.dataset.cropFit === 'true';
+
+  if (fit) {
+    var maxNaturalW = 0;
+    var pending = 0;
+
+    card.querySelectorAll('.card-crop-img').forEach(function(img) {
+      img.style.transform = '';
+      if (img.naturalWidth) {
+        var px = Math.round(img.naturalWidth * scale / 100);
+        img.style.width = px + 'px';
+        if (img.naturalWidth > maxNaturalW) maxNaturalW = img.naturalWidth;
+      } else {
+        pending++;
+        img.addEventListener('load', function onLoad() {
+          img.removeEventListener('load', onLoad);
+          // Re-apply once the image has loaded so naturalWidth is known
+          applyCropScaleToCard(card, parseFloat(card.dataset.cropScale) || 100);
+        });
+      }
+    });
+
+    if (!pending && maxNaturalW > 0) {
+      card.style.maxWidth = Math.round(maxNaturalW * scale / 100) + 'px';
+    }
+  } else {
+    card.style.maxWidth = '';
+    card.querySelectorAll('.card-crop-img').forEach(function(img) {
+      img.style.transform = '';
+      img.style.width = scale + '%';
+    });
+  }
+}
+
+// Set horizontal alignment of crops within their card.
+function applyCropAlignToCard(card, align) {
+  card.querySelectorAll('.card-crop-item').forEach(function(item) {
+    item.style.justifyContent = align === 'center' ? 'center' : 'flex-start';
   });
 }
 
-// Apply saved crop scales on page load
+// Called by align-left / align-center buttons in edit mode.
+function cropAlignBtn(btn, align) {
+  var card = btn.closest('.expanded-card-wrapper');
+  if (!card) return;
+  card.dataset.cropAlign = align;
+  applyCropAlignToCard(card, align);
+  // Update active state on sibling align buttons
+  card.querySelectorAll('.card-align-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.align === align);
+  });
+  var songId = card.dataset.songId;
+  var exerciseId = card.dataset.exerciseId;
+  if (songId && exerciseId) {
+    fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cropAlign: align })
+    }).catch(console.error);
+  }
+}
+
+// Toggle full-fit mode (card wraps to crop dimensions).
+function cropFitToggle(btn) {
+  var card = btn.closest('.expanded-card-wrapper');
+  if (!card) return;
+  var newFit = card.dataset.cropFit !== 'true';
+  card.dataset.cropFit = String(newFit);
+  btn.classList.toggle('active', newFit);
+  if (newFit) {
+    card.classList.add('crop-fit-full');
+  } else {
+    card.classList.remove('crop-fit-full');
+  }
+  var scale = parseFloat(card.dataset.cropScale) || 100;
+  applyCropScaleToCard(card, scale);
+  var songId = card.dataset.songId;
+  var exerciseId = card.dataset.exerciseId;
+  if (songId && exerciseId) {
+    fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cropFit: newFit })
+    }).catch(console.error);
+  }
+}
+
+// Apply saved crop scales, alignment, and fit mode on page load.
 function applyCropScales() {
-  document.querySelectorAll('.expanded-card-wrapper[data-crop-scale]').forEach(function(card) {
-    var scale = parseFloat(card.dataset.cropScale);
-    if (!scale || scale === 100) return;
+  document.querySelectorAll('.expanded-card-wrapper').forEach(function(card) {
+    var scale = parseFloat(card.dataset.cropScale) || 100;
+    var align = card.dataset.cropAlign || 'left';
+    var fit = card.dataset.cropFit === 'true';
+    if (fit) card.classList.add('crop-fit-full');
     applyCropScaleToCard(card, scale);
+    applyCropAlignToCard(card, align);
   });
 }
 

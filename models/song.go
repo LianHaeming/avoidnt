@@ -36,6 +36,8 @@ type Exercise struct {
 	LastPracticedAt       *string  `json:"lastPracticedAt"`
 	CreatedAt             string   `json:"createdAt"`
 	CropScale             *float64 `json:"cropScale,omitempty"`
+	CropAlign             *string  `json:"cropAlign,omitempty"`
+	CropFit               *bool    `json:"cropFit,omitempty"`
 }
 
 // Song is the top-level domain model.

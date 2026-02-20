@@ -82,6 +82,8 @@ type PatchExerciseRequest struct {
 	TotalReps             *int     `json:"totalReps"`
 	LastPracticedAt       *string  `json:"lastPracticedAt"`
 	CropScale             *float64 `json:"cropScale"`
+	CropAlign             *string  `json:"cropAlign"`
+	CropFit               *bool    `json:"cropFit"`
 }
 
 // HandlePatchExercise partially updates an exercise.
@@ -119,6 +121,20 @@ func (d *Deps) HandlePatchExercise(w http.ResponseWriter, r *http.Request) {
 			}
 			if req.CropScale != nil {
 				ex.CropScale = req.CropScale
+			}
+			if req.CropAlign != nil {
+				if *req.CropAlign == "left" || *req.CropAlign == "" {
+					ex.CropAlign = nil
+				} else {
+					ex.CropAlign = req.CropAlign
+				}
+			}
+			if req.CropFit != nil {
+				if *req.CropFit {
+					ex.CropFit = req.CropFit
+				} else {
+					ex.CropFit = nil
+				}
 			}
 			found = true
 			break

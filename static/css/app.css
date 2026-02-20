@@ -1296,10 +1296,10 @@ body:has(.dark-mode) { background: #191919; }
   transition:border-color 0.15s; flex-shrink:0;
 }
 .card-stage-select:focus { outline:none; border-color:#0071e3; box-shadow:0 0 0 3px rgba(0,113,227,0.15); }
-.card-crop-item { border-radius:6px; overflow:hidden; }
+.card-crop-item { border-radius:6px; overflow:hidden; display:flex; justify-content:flex-start; }
 .card-crop-img {
-  width:100%; display:block; object-fit:contain;
-  image-rendering:auto; transform-origin:center center;
+  width:100%; display:block; flex-shrink:0;
+  image-rendering:auto;
 }
 .card-crop-placeholder {
   display:flex; align-items:center; justify-content:center;
@@ -2652,6 +2652,24 @@ body:has(.dark-mode) { background: #191919; }
 .dark-mode .card-zoom-btn { background:#1e1e20; border-color:#2a2a2c; color:#d2d2d7; }
 .dark-mode .card-zoom-btn:hover { background:#253040; color:#60a5fa; border-color:#3b82f6; }
 .dark-mode .card-zoom-btn:active { background:#1e3050; }
+
+/* Align + fit buttons on cards (edit mode) */
+.card-align-btn, .card-fit-btn {
+  width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+  padding:0; border:1px solid #e5e7eb; border-radius:5px;
+  background:#f9fafb; color:#9ca3af; cursor:pointer;
+  transition:all 0.15s; flex-shrink:0;
+}
+.card-align-btn:hover, .card-fit-btn:hover { background:#eff6ff; color:#3b82f6; border-color:#93c5fd; }
+.card-align-btn.active, .card-fit-btn.active {
+  background:#dbeafe; color:#2563eb; border-color:#93c5fd;
+}
+.dark-mode .card-align-btn, .dark-mode .card-fit-btn { background:#1e1e20; border-color:#2a2a2c; color:#6b7280; }
+.dark-mode .card-align-btn:hover, .dark-mode .card-fit-btn:hover { background:#253040; color:#60a5fa; border-color:#3b82f6; }
+.dark-mode .card-align-btn.active, .dark-mode .card-fit-btn.active { background:#1e3050; color:#60a5fa; border-color:#3b82f6; }
+
+/* Full-fit mode: card wraps to crop width */
+.expanded-card-wrapper.crop-fit-full { max-width:fit-content; align-self:center; }
 
 /* Edit toggle button active state */
 .edit-mode #edit-toggle-btn {
