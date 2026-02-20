@@ -395,9 +395,7 @@ function cropResizeMove(event) {
   var newScale = Math.round(Math.max(30, Math.min(300, _resizeState.startScale * ratio)));
 
   _resizeState.card.dataset.cropScale = newScale;
-  _resizeState.card.querySelectorAll('.card-crop-img').forEach(function(img) {
-    img.style.width = newScale + '%';
-  });
+  applyCropScaleToCard(_resizeState.card, newScale);
 }
 
 function cropResizeEnd() {
@@ -423,15 +421,40 @@ function cropResizeEnd() {
   document.body.style.userSelect = '';
 }
 
+// Zoom crop via +/- buttons
+function cropZoomBtn(btn, delta) {
+  var card = btn.closest('.expanded-card-wrapper');
+  if (!card) return;
+  var currentScale = parseFloat(card.dataset.cropScale) || 100;
+  var newScale = Math.round(Math.max(30, Math.min(300, currentScale + delta)));
+  card.dataset.cropScale = newScale;
+  applyCropScaleToCard(card, newScale);
+  // Save to server
+  var songId = card.dataset.songId;
+  var exerciseId = card.dataset.exerciseId;
+  if (songId && exerciseId) {
+    fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cropScale: newScale })
+    }).catch(console.error);
+  }
+}
+
+// Apply a scale value to all crop images in a card using CSS transform (centered)
+function applyCropScaleToCard(card, scale) {
+  var t = scale === 100 ? '' : 'scale(' + (scale / 100) + ')';
+  card.querySelectorAll('.card-crop-img').forEach(function(img) {
+    img.style.transform = t;
+  });
+}
+
 // Apply saved crop scales on page load
 function applyCropScales() {
   document.querySelectorAll('.expanded-card-wrapper[data-crop-scale]').forEach(function(card) {
     var scale = parseFloat(card.dataset.cropScale);
     if (!scale || scale === 100) return;
-    var imgs = card.querySelectorAll('.card-crop-img');
-    imgs.forEach(function(img) {
-      img.style.width = scale + '%';
-    });
+    applyCropScaleToCard(card, scale);
   });
 }
 

@@ -60,7 +60,7 @@ func main() {
 	mux.HandleFunc("GET /songs", deps.HandleSongsList)
 	mux.HandleFunc("GET /songs/new", deps.HandlePlanDesignerNew)
 	mux.HandleFunc("GET /songs/{songId}", deps.HandleSongDetail)
-	mux.HandleFunc("GET /songs/{songId}/edit", deps.HandlePlanDesignerEdit)
+	mux.HandleFunc("GET /songs/{songId}/edit", deps.HandleSongDetailEdit)
 	mux.HandleFunc("GET /settings", deps.HandleSettingsPage)
 
 	// htmx partials + API endpoints

@@ -17,6 +17,7 @@ type SongDetailData struct {
 	LastPracticed     *string // most recent lastPracticedAt
 	StageCounts       [5]int  // count of exercises at each stage (index 0 = stage 1)
 	ExerciseCount     int
+	EditMode          bool // true when entering edit mode
 }
 
 // SectionGroup groups exercises under a section label.
@@ -44,6 +45,9 @@ func (d *Deps) HandleSongDetail(w http.ResponseWriter, r *http.Request) {
 	settings := d.Settings.Get()
 	groups := buildSectionGroups(song)
 
+	// Check if entering edit mode via query param or /edit path
+	editMode := r.URL.Query().Get("edit") == "1"
+
 	// Compute aggregate stats
 	var totalTime, totalReps int
 	var stageCounts [5]int
@@ -64,9 +68,16 @@ func (d *Deps) HandleSongDetail(w http.ResponseWriter, r *http.Request) {
 		LastPracticed:     song.LastPracticed(),
 		StageCounts:       stageCounts,
 		ExerciseCount:     len(song.Exercises),
+		EditMode:          editMode,
 	}
 
 	d.render(w, "song-detail.html", data)
+}
+
+// HandleSongDetailEdit redirects /songs/{songId}/edit to the song detail page in edit mode.
+func (d *Deps) HandleSongDetailEdit(w http.ResponseWriter, r *http.Request) {
+	songID := r.PathValue("songId")
+	http.Redirect(w, r, "/songs/"+songID+"?edit=1", http.StatusFound)
 }
 
 func buildSectionGroups(song *models.Song) []SectionGroup {
