@@ -2520,9 +2520,9 @@ body:has(.dark-mode) { background: #191919; }
   z-index:5;
 }
 
-/* Edit mode: section nav wrapper */
+/* Edit mode: section nav wrapper — match practice-controls-bar spacing */
 .se-section-nav-wrapper {
-  padding:8px 0 4px;
+  margin-top:1rem;
 }
 
 /* Edit action buttons (slide out from edit button) */
@@ -2568,10 +2568,13 @@ body:has(.dark-mode) { background: #191919; }
 /* Edit mode visibility toggles */
 .edit-mode .se-view-text { display:none !important; }
 .edit-mode .se-edit-text { display:inline !important; }
+.edit-mode .se-edit-text.card-title-edit { display:block !important; }
 .edit-mode .se-view-only { display:none !important; }
 .edit-mode .se-edit-only { display:block !important; }
+.edit-mode .se-edit-only.card-edit-delete-btn { display:flex !important; }
 .edit-mode .se-practice-controls { display:none !important; }
 .edit-mode .se-edit-controls { display:flex !important; }
+.edit-mode .expanded-card { border-left-color:transparent !important; }
 
 /* Non-edit mode (defaults) */
 .se-view-text { display:contents; }
@@ -2581,36 +2584,60 @@ body:has(.dark-mode) { background: #191919; }
 
 /* Card title edit input (inline) */
 .card-title-edit {
-  width:100%; padding:4px 8px; font-size:0.85rem; font-weight:600;
-  background:transparent; border:1px solid transparent; border-radius:4px;
-  color:#1a1a1a; transition:border-color 0.15s;
+  width:100%; padding:0; font-size:0.9rem; font-weight:600;
+  background:transparent; border:none; border-radius:0;
+  color:#1a1a1a;
+  box-sizing:border-box; margin:0;
+  letter-spacing:-0.01em;
+  height:1.35em; line-height:1.35;
 }
-.card-title-edit:hover { border-color:#e5e7eb; }
-.card-title-edit:focus { outline:none; border-color:#3b82f6; background:#fff; box-shadow:0 0 0 2px rgba(59,130,246,0.1); }
+.card-title-edit:hover { background:rgba(255,255,255,0.06); }
+.card-title-edit:focus { outline:none; background:rgba(255,255,255,0.1); border-bottom:1px solid #3b82f6; box-shadow:none; }
 .card-title-edit::placeholder { color:#d1d5db; font-weight:500; }
 .dark-mode .card-title-edit { color:#e5e7eb; }
-.dark-mode .card-title-edit:hover { border-color:#444; }
-.dark-mode .card-title-edit:focus { background:#222; border-color:#60a5fa; }
+.dark-mode .card-title-edit:hover { background:rgba(255,255,255,0.04); }
+.dark-mode .card-title-edit:focus { background:rgba(255,255,255,0.06); border-bottom-color:#60a5fa; }
 .dark-mode .card-title-edit::placeholder { color:#555; }
 
 /* Card section select in edit controls */
-.card-section-select {
+.se-edit-controls .card-section-select {
   padding:4px 6px; font-size:0.75rem; border-radius:6px;
   border:1px solid #e5e7eb; background:#fff; color:#374151;
   cursor:pointer; appearance:auto;
+  margin-left:0;
 }
-.dark-mode .card-section-select { background:#222224; color:#e5e7eb; border-color:#333; }
+.dark-mode .se-edit-controls .card-section-select { background:#222224; color:#e5e7eb; border-color:#333; }
 
-/* Card delete button in edit controls */
+/* Card delete button — old text style (kept for plan-designer compat) */
 .card-delete-btn {
   padding:4px 8px; font-size:0.72rem; font-weight:500;
   border-radius:5px; cursor:pointer; border:1px solid #fecaca;
   background:transparent; color:#dc2626; transition:all 0.15s;
-  margin-left:auto; white-space:nowrap;
+  white-space:nowrap;
 }
 .card-delete-btn:hover { background:#fef2f2; }
 .dark-mode .card-delete-btn { border-color:#5c2020; color:#ff6961; }
 .dark-mode .card-delete-btn:hover { background:#3a1c1c; }
+
+/* Card edit-mode delete icon button (top-right of card, like header action buttons) */
+.card-edit-delete-btn {
+  position:absolute; top:8px; right:8px; z-index:10;
+  display:none; align-items:center; justify-content:center;
+  width:30px; height:30px; border-radius:8px;
+  background:rgba(255,255,255,0.85); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(0,0,0,0.06);
+  color:#dc2626; cursor:pointer;
+  transition:opacity 0.15s, background 0.15s, color 0.15s;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
+}
+.card-edit-delete-btn svg { display:block; }
+.card-edit-delete-btn:hover { background:rgba(220,38,38,0.1); color:#b91c1c; }
+.edit-mode .card-edit-delete-btn { display:flex; }
+.dark-mode .card-edit-delete-btn {
+  background:rgba(30,30,32,0.85); border-color:rgba(255,255,255,0.08);
+  color:#ff6961;
+}
+.dark-mode .card-edit-delete-btn:hover { background:rgba(255,105,97,0.15); color:#ff6961; }
 
 /* Zoom +/- buttons on cards */
 .card-zoom-btn {

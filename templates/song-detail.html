@@ -357,11 +357,12 @@
                     <div class="card-crop-placeholder"><span>🎵</span></div>
                   {{end}}
 
-                  <!-- Crop resize handle (visible in edit mode) -->
-                  <div class="card-crop-resize-handle se-edit-only" onmousedown="cropResizeStart(event,this)" ontouchstart="cropResizeStart(event,this)">
-                    <span class="resize-handle-bar"></span>
-                  </div>
                 </div>
+
+                <!-- Edit mode: delete button (top-right X) -->
+                <button class="card-edit-delete-btn se-edit-only" onclick="event.stopPropagation();seDeleteExercise('{{.ID}}')" title="Remove exercise">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
               </div>
 
               <!-- Practice controls -->
@@ -388,14 +389,6 @@
 
               <!-- Edit controls -->
               <div class="card-controls-bar se-edit-controls" onclick="event.stopPropagation()">
-                <select class="card-stage-select" aria-label="Difficulty"
-                        style="color:{{stageColor .Difficulty | safeCSS}}"
-                        onchange="seSetDifficulty('{{.ID}}',parseInt(this.value))">
-                  {{$diff := .Difficulty}}
-                  {{range seq 5}}
-                  <option value="{{.}}" {{if eq . $diff}}selected{{end}}>{{index $.Settings.StageNames (sub . 1)}}</option>
-                  {{end}}
-                </select>
                 <select class="card-section-select" onchange="seSetSection('{{.ID}}',this.value)">
                   <option value="" disabled{{if not .SectionID}} selected{{end}}>Section…</option>
                   {{range $.SectionGroups}}
@@ -404,7 +397,6 @@
                     {{end}}
                   {{end}}
                 </select>
-                <button class="card-delete-btn" onclick="event.stopPropagation();seDeleteExercise('{{.ID}}')">Remove</button>
                 <button class="card-zoom-btn" onclick="event.stopPropagation();cropZoomBtn(this,-10)" title="Zoom out">−</button>
                 <button class="card-zoom-btn" onclick="event.stopPropagation();cropZoomBtn(this,10)" title="Zoom in">+</button>
               </div>

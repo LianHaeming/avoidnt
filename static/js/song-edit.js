@@ -343,16 +343,8 @@
 
     structure.forEach(function(sec, i) {
       var label = getSectionLabel(sec);
-      var secExercises = exercises.filter(function(ex) { return ex.sectionId === sec.id; });
-      var lowestDiff = 0;
-      secExercises.forEach(function(ex) {
-        var d = ex.difficulty || 0;
-        if (d >= 1 && d <= 5) {
-          if (lowestDiff === 0 || d < lowestDiff) lowestDiff = d;
-        }
-      });
-      var stageNum = lowestDiff || 1;
-      var color = STAGE_COLORS[stageNum] || DEFAULT_STAGE_COLOR;
+      // Use neutral grey for all edit-mode pills
+      var color = '#9ca3af';
       var tint = hexToRGBA(color, 0.1);
       var border = hexToRGBA(color, 0.35);
 
@@ -958,12 +950,14 @@
       }
     });
 
-    // Resize handle
-    html += '<div class="card-crop-resize-handle se-edit-only" onmousedown="cropResizeStart(event,this)" ontouchstart="cropResizeStart(event,this)">';
-    html += '<span class="resize-handle-bar"></span>';
-    html += '</div>';
+    html += '</div>'; // .card-crop-area
 
-    html += '</div></div>'; // .card-crop-area + .expanded-card
+    // Edit mode delete button (top-right)
+    html += '<button class="card-edit-delete-btn se-edit-only" onclick="event.stopPropagation();seDeleteExercise(\'' + ex.id + '\')" title="Remove exercise">';
+    html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+    html += '</button>';
+
+    html += '</div>'; // .expanded-card
 
     // Practice controls (hidden in edit mode)
     html += '<div class="card-controls-bar se-practice-controls" style="display:none" onclick="event.stopPropagation()">';
@@ -977,12 +971,6 @@
 
     // Edit controls (visible)
     html += '<div class="card-controls-bar se-edit-controls" onclick="event.stopPropagation()">';
-    html += '<select class="card-stage-select" aria-label="Difficulty" style="color:' + (STAGE_COLORS[1] || DEFAULT_STAGE_COLOR) + '"' +
-      ' onchange="seSetDifficulty(\'' + ex.id + '\',parseInt(this.value))">';
-    for (var d = 1; d <= 5; d++) {
-      html += '<option value="' + d + '"' + (d === 1 ? ' selected' : '') + '>' + escHtml(stageNames[d - 1]) + '</option>';
-    }
-    html += '</select>';
 
     html += '<select class="card-section-select" onchange="seSetSection(\'' + ex.id + '\',this.value)">';
     html += '<option value="" disabled selected>Section…</option>';
@@ -991,7 +979,6 @@
     });
     html += '</select>';
 
-    html += '<button class="card-delete-btn" onclick="event.stopPropagation();seDeleteExercise(\'' + ex.id + '\')">Remove</button>';
     html += '<button class="card-zoom-btn" onclick="event.stopPropagation();cropZoomBtn(this,-10)" title="Zoom out">−</button>';
     html += '<button class="card-zoom-btn" onclick="event.stopPropagation();cropZoomBtn(this,10)" title="Zoom in">+</button>';
     html += '</div>';
