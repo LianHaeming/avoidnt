@@ -123,6 +123,22 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
             </button>
           </span>
+          <!-- Edit mode action buttons (slide out from edit button) -->
+          <span class="se-edit-actions" id="se-edit-actions">
+            <span class="save-error" id="se-save-error" style="display:none"></span>
+            <button class="header-icon-btn se-action-btn se-action-pdf" id="se-pdf-toggle-btn" onclick="seTogglePdf()" title="Show PDF">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </button>
+            <button class="header-icon-btn se-action-btn se-action-autofill" id="se-autofill-btn" onclick="seAutoFill()" disabled style="display:none" title="Auto-fill with AI">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.912 5.813L20 12l-6.088 3.187L12 21l-1.912-5.813L4 12l6.088-3.187L12 3z"/></svg>
+            </button>
+            <button class="header-icon-btn se-action-btn se-action-delete" id="se-delete-btn" onclick="seShowDeleteModal()" title="Delete song">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+            <button class="header-icon-btn se-action-btn se-action-save" id="se-save-btn" onclick="seSave()" title="Save">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            </button>
+          </span>
           <!-- Edit toggle button (always visible) -->
           <button class="header-icon-btn" id="edit-toggle-btn" onclick="seToggleEditMode()" title="Edit song">
             <svg class="icon-edit" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
@@ -256,20 +272,6 @@
         </div>
       </div>
 
-      <!-- Edit Mode: toolbar row -->
-      <div class="se-edit-toolbar" id="se-edit-toolbar" style="display:none">
-        <button class="se-toolbar-btn se-pdf-btn" id="se-pdf-toggle-btn" onclick="seTogglePdf()" title="Show PDF to crop exercises">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <span>Show PDF</span>
-        </button>
-        <button class="se-toolbar-btn se-autofill-btn" id="se-autofill-btn" onclick="seAutoFill()" disabled style="display:none">
-          &#10024; Auto-fill
-        </button>
-        <span class="se-toolbar-spacer"></span>
-        <button class="se-toolbar-btn se-delete-btn" onclick="seShowDeleteModal()" title="Delete song">Delete</button>
-        <span class="save-error" id="se-save-error" style="display:none"></span>
-        <button class="se-toolbar-btn se-save-btn" id="se-save-btn" onclick="seSave()">Save</button>
-      </div>
 
       <!-- Practice Controls (hidden in edit mode) -->
       <div class="practice-controls-bar se-view-only">

@@ -215,9 +215,15 @@
     var sectionNav = document.getElementById('se-section-nav-wrapper');
     if (sectionNav) sectionNav.style.display = isEdit ? '' : 'none';
 
-    // Edit toolbar
-    var toolbar = document.getElementById('se-edit-toolbar');
-    if (toolbar) toolbar.style.display = isEdit ? 'flex' : 'none';
+    // Edit action buttons (slide out from edit button)
+    var editActions = document.getElementById('se-edit-actions');
+    if (editActions) {
+      if (isEdit) {
+        editActions.classList.add('visible');
+      } else {
+        editActions.classList.remove('visible');
+      }
+    }
 
     // Edit toggle button icons
     var editIcon = document.querySelector('#edit-toggle-btn .icon-edit');
@@ -530,8 +536,13 @@
 
     var btn = document.getElementById('se-pdf-toggle-btn');
     if (btn) {
-      var label = btn.querySelector('span');
-      if (label) label.textContent = pdfVisible ? 'Hide PDF' : 'Show PDF';
+      if (pdfVisible) {
+        btn.classList.add('active');
+        btn.title = 'Hide PDF';
+      } else {
+        btn.classList.remove('active');
+        btn.title = 'Show PDF';
+      }
     }
 
     if (pdfVisible && jobId && pageCount > 0 && pagesInner && pagesInner.children.length === 0) {
@@ -995,7 +1006,7 @@
     if (!jobId || pageCount === 0) return;
     var btn = document.getElementById('se-autofill-btn');
     var errEl = document.getElementById('se-save-error');
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-small"></span> Analyzing\u2026'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-small"></span>'; }
     if (errEl) errEl.style.display = 'none';
 
     try {
@@ -1103,7 +1114,7 @@
     } catch(err) {
       if (errEl) { errEl.textContent = err.message; errEl.style.display = ''; }
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '\u2728 Auto-fill'; }
+      if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.912 5.813L20 12l-6.088 3.187L12 21l-1.912-5.813L4 12l6.088-3.187L12 3z"/></svg>'; }
       updateAutoFillBtn();
     }
   };
@@ -1122,7 +1133,7 @@
     saving = true;
 
     var btn = document.getElementById('se-save-btn');
-    if (btn) btn.innerHTML = '<span class="spinner-small"></span> Saving...';
+    if (btn) btn.innerHTML = '<span class="spinner-small"></span>';
 
     var songExercises = exercises.map(function(card) {
       var existing = existingExercises.find(function(e) { return e.id === card.id; });
@@ -1180,7 +1191,7 @@
       if (errEl) { errEl.textContent = err.message; errEl.style.display = ''; }
     } finally {
       saving = false;
-      if (btn) btn.textContent = 'Save';
+      if (btn) btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
     }
   };
 

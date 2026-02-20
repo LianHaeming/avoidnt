@@ -2525,51 +2525,45 @@ body:has(.dark-mode) { background: #191919; }
   padding:8px 0 4px;
 }
 
-/* Edit toolbar */
-.se-edit-toolbar {
-  display:flex; align-items:center; gap:8px;
-  padding:8px 0; flex-wrap:wrap;
+/* Edit action buttons (slide out from edit button) */
+.se-edit-actions {
+  display:flex; align-items:center; gap:0.25rem;
+  overflow:hidden; max-width:0; opacity:0;
+  transition:max-width 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease, gap 0.3s ease;
 }
-.se-toolbar-btn {
-  padding:6px 12px; font-size:0.8rem; font-weight:500;
-  border:1px solid #e5e7eb; border-radius:8px;
-  background:#fff; color:#374151; cursor:pointer;
-  display:inline-flex; align-items:center; gap:4px;
-  transition:all 0.15s;
+.se-edit-actions.visible {
+  max-width:220px; opacity:1;
 }
-.se-toolbar-btn:hover { background:#f3f4f6; border-color:#d1d5db; }
-.dark-mode .se-toolbar-btn { background:#222224; color:#e5e7eb; border-color:#333; }
-.dark-mode .se-toolbar-btn:hover { background:#2a2a2c; }
 
-.se-toolbar-btn.se-pdf-btn { color:#3b82f6; border-color:rgba(59,130,246,0.3); }
-.se-toolbar-btn.se-pdf-btn:hover { background:rgba(59,130,246,0.06); }
-.dark-mode .se-toolbar-btn.se-pdf-btn { color:#60a5fa; border-color:rgba(96,165,250,0.3); }
-.dark-mode .se-toolbar-btn.se-pdf-btn:hover { background:rgba(96,165,250,0.1); }
+/* Action button color overrides */
+.se-action-btn.se-action-pdf { color:#3b82f6; }
+.se-action-btn.se-action-pdf:hover { background:rgba(59,130,246,0.1); color:#3b82f6; }
+.se-action-btn.se-action-pdf.active { color:#3b82f6; background:rgba(59,130,246,0.12); }
+.dark-mode .se-action-btn.se-action-pdf { color:#60a5fa; }
+.dark-mode .se-action-btn.se-action-pdf:hover { background:rgba(96,165,250,0.15); color:#60a5fa; }
+.dark-mode .se-action-btn.se-action-pdf.active { color:#60a5fa; background:rgba(96,165,250,0.18); }
 
-.se-toolbar-btn.se-autofill-btn { color:#8b5cf6; border-color:rgba(139,92,246,0.3); }
-.se-toolbar-btn.se-autofill-btn:hover { background:rgba(139,92,246,0.06); }
-.se-toolbar-btn.se-autofill-btn:disabled { opacity:0.5; cursor:default; }
-.dark-mode .se-toolbar-btn.se-autofill-btn { color:#a78bfa; border-color:rgba(167,139,250,0.3); }
-.dark-mode .se-toolbar-btn.se-autofill-btn:hover { background:rgba(167,139,250,0.1); }
+.se-action-btn.se-action-autofill { color:#8b5cf6; }
+.se-action-btn.se-action-autofill:hover { background:rgba(139,92,246,0.1); color:#8b5cf6; }
+.se-action-btn.se-action-autofill:disabled { opacity:0.4; cursor:default; }
+.se-action-btn.se-action-autofill:disabled:hover { background:transparent; }
+.dark-mode .se-action-btn.se-action-autofill { color:#a78bfa; }
+.dark-mode .se-action-btn.se-action-autofill:hover { background:rgba(167,139,250,0.15); color:#a78bfa; }
 
-.se-toolbar-btn.se-delete-btn { color:#dc2626; border-color:rgba(220,38,38,0.2); }
-.se-toolbar-btn.se-delete-btn:hover { background:rgba(220,38,38,0.06); }
-.dark-mode .se-toolbar-btn.se-delete-btn { color:#ff6961; border-color:rgba(255,105,97,0.3); }
-.dark-mode .se-toolbar-btn.se-delete-btn:hover { background:rgba(255,105,97,0.08); }
+.se-action-btn.se-action-delete { color:#dc2626; }
+.se-action-btn.se-action-delete:hover { background:rgba(220,38,38,0.1); color:#dc2626; }
+.dark-mode .se-action-btn.se-action-delete { color:#ff6961; }
+.dark-mode .se-action-btn.se-action-delete:hover { background:rgba(255,105,97,0.12); color:#ff6961; }
 
-.se-toolbar-btn.se-save-btn {
-  background:#3b82f6; color:#fff; border-color:#3b82f6; font-weight:600;
+.se-action-btn.se-action-save { color:#3b82f6; }
+.se-action-btn.se-action-save:hover { background:rgba(59,130,246,0.1); color:#3b82f6; }
+.dark-mode .se-action-btn.se-action-save { color:#60a5fa; }
+.dark-mode .se-action-btn.se-action-save:hover { background:rgba(96,165,250,0.12); color:#60a5fa; }
+
+.se-edit-actions .save-error {
+  font-size:0.7rem; color:#dc2626; font-weight:500; white-space:nowrap;
 }
-.se-toolbar-btn.se-save-btn:hover { background:#2563eb; border-color:#2563eb; }
-.dark-mode .se-toolbar-btn.se-save-btn { background:#3b82f6; border-color:#3b82f6; color:#fff; }
-.dark-mode .se-toolbar-btn.se-save-btn:hover { background:#2563eb; }
-
-.se-toolbar-spacer { flex:1; }
-
-.se-edit-toolbar .save-error {
-  font-size:0.75rem; color:#dc2626; font-weight:500;
-}
-.dark-mode .se-edit-toolbar .save-error { color:#ff6961; }
+.dark-mode .se-edit-actions .save-error { color:#ff6961; }
 
 /* Edit mode visibility toggles */
 .edit-mode .se-view-text { display:none !important; }
