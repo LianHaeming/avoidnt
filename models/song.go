@@ -64,6 +64,7 @@ type SongSummary struct {
 	CreatedAt       string   `json:"createdAt"`
 	ExerciseCount   int      `json:"exerciseCount"`
 	MasteredCount   int      `json:"masteredCount"`
+	StageCounts     [5]int   `json:"stageCounts"`
 	LowestStage     *int     `json:"lowestStage"`
 	LastPracticedAt *string  `json:"lastPracticedAt"`
 	SpotifyURL      *string  `json:"spotifyUrl,omitempty"`
@@ -100,9 +101,13 @@ func (s *Song) LastPracticed() *string {
 // ToSummary converts a Song to a SongSummary.
 func (s *Song) ToSummary() SongSummary {
 	mastered := 0
+	var stageCounts [5]int
 	for _, ex := range s.Exercises {
 		if ex.Stage >= 5 {
 			mastered++
+		}
+		if ex.Stage >= 1 && ex.Stage <= 5 {
+			stageCounts[ex.Stage-1]++
 		}
 	}
 	return SongSummary{
@@ -114,6 +119,7 @@ func (s *Song) ToSummary() SongSummary {
 		CreatedAt:       s.CreatedAt,
 		ExerciseCount:   len(s.Exercises),
 		MasteredCount:   mastered,
+		StageCounts:     stageCounts,
 		LowestStage:     s.LowestStage(),
 		LastPracticedAt: s.LastPracticed(),
 		SpotifyURL:      s.SpotifyURL,

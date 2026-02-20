@@ -303,27 +303,6 @@
       </div>
     </header>
 
-    <!-- Progress Summary Bar -->
-    {{if gt .ExerciseCount 0}}
-    <div class="progress-summary-bar se-view-only" onclick="toggleStats()">
-      <span class="progress-bar-stat">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        {{formatDuration .TotalPracticeTime}}
-      </span>
-      <div class="progress-stage-bar">
-        {{range seq 5}}
-          {{$count := index $.StageCounts (sub . 1)}}
-          {{if gt $count 0}}
-          <div class="progress-stage-segment" style="flex:{{$count}};background:{{stageColor . | safeCSS}}" title="{{index $.Settings.StageNames (sub . 1)}}: {{$count}}"></div>
-          {{end}}
-        {{end}}
-      </div>
-      <span class="progress-bar-stat progress-bar-stat-muted">
-        {{relativeTime .LastPracticed}}
-      </span>
-    </div>
-    {{end}}
-
     <!-- Exercise Cards -->
     <div id="se-exercises-container">
     {{if eq (len .Song.Exercises) 0}}

@@ -1030,6 +1030,13 @@ body:has(.dark-mode) { background: #191919; }
 }
 .progress-stage-segment { border-radius:2px; min-width:3px; transition:flex 0.3s ease; }
 
+/* Stage bar variant for song cards (smaller) */
+.progress-stage-bar-card {
+  height:4px; border-radius:2px;
+}
+.progress-stage-bar-card .progress-stage-segment { border-radius:1px; min-width:2px; }
+.progress-stage-bar-sm { height:3px; }
+
 /* Dark mode: Progress Summary Bar */
 .dark-mode .progress-bar-stat { color:#d2d2d7; }
 .dark-mode .progress-bar-stat svg { color:#636366; }

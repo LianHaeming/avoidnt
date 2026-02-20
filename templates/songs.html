@@ -21,8 +21,14 @@
           <span class="continue-title">{{.Title}}</span>
           {{if .Artist}}<span class="continue-artist">{{.Artist}}</span>{{end}}
           <div class="progress-row">
-            <div class="progress-bar">
-              <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
+            {{$sc := .StageCounts}}
+            <div class="progress-stage-bar progress-stage-bar-card">
+              {{range seq 5}}
+                {{$count := index $sc (sub . 1)}}
+                {{if gt $count 0}}
+                <div class="progress-stage-segment" style="flex:{{$count}};background:{{stageColor .}}"></div>
+                {{end}}
+              {{end}}
             </div>
             <span class="progress-fraction">{{.MasteredCount}}/{{.ExerciseCount}}</span>
           </div>
@@ -53,8 +59,14 @@
         <div class="attention-info">
           <span class="attention-title">{{.Title}}</span>
           <div class="progress-row">
-            <div class="progress-bar progress-bar-sm">
-              <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
+            {{$sc := .StageCounts}}
+            <div class="progress-stage-bar progress-stage-bar-card progress-stage-bar-sm">
+              {{range seq 5}}
+                {{$count := index $sc (sub . 1)}}
+                {{if gt $count 0}}
+                <div class="progress-stage-segment" style="flex:{{$count}};background:{{stageColor .}}"></div>
+                {{end}}
+              {{end}}
             </div>
             <span class="progress-fraction">{{.MasteredCount}}/{{.ExerciseCount}}</span>
           </div>
@@ -140,8 +152,14 @@
           <span class="card-title">{{.Title}}</span>
           {{if .Artist}}<span class="card-artist">{{.Artist}}</span>{{end}}
           <div class="progress-row">
-            <div class="progress-bar">
-              <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
+            {{$sc := .StageCounts}}
+            <div class="progress-stage-bar progress-stage-bar-card">
+              {{range seq 5}}
+                {{$count := index $sc (sub . 1)}}
+                {{if gt $count 0}}
+                <div class="progress-stage-segment" style="flex:{{$count}};background:{{stageColor .}}"></div>
+                {{end}}
+              {{end}}
             </div>
             <span class="progress-fraction progress-fraction-sm">{{.MasteredCount}}/{{.ExerciseCount}}</span>
           </div>
@@ -172,8 +190,14 @@
         <span class="list-title">{{.Title}}</span>
         <span class="list-artist">{{if .Artist}}{{.Artist}}{{else}}—{{end}}</span>
         <div class="progress-row list-progress">
-          <div class="progress-bar progress-bar-sm">
-            <div class="progress-fill" style="width:{{if gt .ExerciseCount 0}}{{pctFloat .MasteredCount .ExerciseCount}}%{{else}}0%{{end}}"></div>
+          {{$sc := .StageCounts}}
+          <div class="progress-stage-bar progress-stage-bar-card progress-stage-bar-sm">
+            {{range seq 5}}
+              {{$count := index $sc (sub . 1)}}
+              {{if gt $count 0}}
+              <div class="progress-stage-segment" style="flex:{{$count}};background:{{stageColor .}}"></div>
+              {{end}}
+            {{end}}
           </div>
           <span class="progress-fraction progress-fraction-sm">{{.MasteredCount}}/{{.ExerciseCount}}</span>
         </div>
