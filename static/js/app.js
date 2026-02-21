@@ -140,22 +140,30 @@ function onStageChange(select, songId, exerciseId) {
 
 function updateSectionPill(sectionId) {
   if (!sectionId) return;
-  var pill = document.querySelector('.section-pill[data-section-id="' + sectionId + '"]');
-  if (!pill) return;
+  // Find all pills that cover this section ID
+  var pills = document.querySelectorAll('.section-pill');
+  pills.forEach(function(pill) {
+    var ids = pill.dataset.sectionIds ? pill.dataset.sectionIds.split(',') : [pill.dataset.sectionId];
+    if (ids.indexOf(sectionId) === -1) return;
 
-  // Find all exercise cards in this section and compute lowest stage
-  var cards = document.querySelectorAll('.expanded-card-wrapper[data-section-id="' + sectionId + '"]');
-  var lowest = 5;
-  cards.forEach(function(c) {
-    var s = parseInt(c.dataset.stage) || 1;
-    if (s < lowest) lowest = s;
+    // Compute lowest stage across all section IDs this pill covers
+    var lowest = 5;
+    var hasCards = false;
+    ids.forEach(function(id) {
+      document.querySelectorAll('.expanded-card-wrapper[data-section-id="' + id + '"]').forEach(function(c) {
+        hasCards = true;
+        var s = parseInt(c.dataset.stage) || 1;
+        if (s < lowest) lowest = s;
+      });
+    });
+
+    if (!hasCards) lowest = 0;
+    var colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
+    var color = colors[lowest] || '#9ca3af';
+    pill.style.color = hexToRGBA(color, 0.7);
+    pill.style.background = hexToRGBA(color, 0.1);
+    pill.style.borderColor = hexToRGBA(color, 0.35);
   });
-
-  var colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
-  var color = colors[lowest] || '#9ca3af';
-  pill.style.color = hexToRGBA(color, 0.7);
-  pill.style.background = hexToRGBA(color, 0.1);
-  pill.style.borderColor = hexToRGBA(color, 0.35);
 }
 
 function hexToRGBA(hex, alpha) {
@@ -182,11 +190,11 @@ document.addEventListener('keydown', function(e) {
     closeCtxMenu();
     closeSongDetailMenu();
     closePractice();
-    // Close display settings drawer if open
-    var drawer = document.getElementById('display-settings-drawer');
-    if (drawer && drawer.style.display !== 'none') {
-      drawer.style.display = 'none';
-    }
+    // Close display settings dropdown if open
+    var dActions = document.getElementById('display-actions');
+    if (dActions) dActions.classList.remove('visible');
+    var dBtn = document.getElementById('display-toggle-btn');
+    if (dBtn) dBtn.classList.remove('active');
     // Clear active section filter
     clearSectionFilter();
   }
@@ -203,6 +211,26 @@ document.addEventListener('click', function(e) {
   var sdDropdown = document.getElementById('song-detail-dropdown');
   if (sdDropdown && sdDropdown.classList.contains('open') && sdMenu && !sdMenu.contains(e.target)) {
     sdDropdown.classList.remove('open');
+  }
+  // Close display settings drawer on outside click
+  var displayActions = document.getElementById('display-actions');
+  var displayBtn = document.getElementById('display-toggle-btn');
+  if (displayActions && displayActions.classList.contains('visible')) {
+    var displayWrap = displayBtn ? displayBtn.closest('.header-dropdown-wrap') : null;
+    if (displayWrap && !displayWrap.contains(e.target)) {
+      displayActions.classList.remove('visible');
+      if (displayBtn) displayBtn.classList.remove('active');
+    }
+  }
+  // Close master zoom drawer on outside click
+  var mzActions = document.getElementById('master-zoom-actions');
+  var mzBtn = document.getElementById('master-zoom-toggle-btn');
+  if (mzActions && mzActions.classList.contains('visible')) {
+    var mzWrap = mzBtn ? mzBtn.closest('.header-dropdown-wrap') : null;
+    if (mzWrap && !mzWrap.contains(e.target)) {
+      mzActions.classList.remove('visible');
+      if (mzBtn) mzBtn.classList.remove('active');
+    }
   }
 });
 
@@ -354,82 +382,14 @@ function regeneratePreviews(btn) {
     });
 }
 
-// ===== Crop resize: drag handle =====
-var _resizeState = null;
-
-function cropResizeStart(event, handle) {
-  event.preventDefault();
-  event.stopPropagation();
-  var card = handle.closest('.expanded-card-wrapper');
-  if (!card) return;
-
-  var cropArea = card.querySelector('.card-crop-area');
-  if (!cropArea) return;
-
-  var startY = event.type === 'touchstart' ? event.touches[0].clientY : event.clientY;
-  var startHeight = cropArea.offsetHeight;
-  var currentScale = parseFloat(card.dataset.cropScale) || 100;
-
-  _resizeState = {
-    card: card,
-    cropArea: cropArea,
-    startY: startY,
-    startHeight: startHeight,
-    startScale: currentScale
-  };
-
-  document.addEventListener('mousemove', cropResizeMove);
-  document.addEventListener('mouseup', cropResizeEnd);
-  document.addEventListener('touchmove', cropResizeMove, { passive: false });
-  document.addEventListener('touchend', cropResizeEnd);
-  document.body.style.cursor = 'ns-resize';
-  document.body.style.userSelect = 'none';
-}
-
-function cropResizeMove(event) {
-  if (!_resizeState) return;
-  event.preventDefault();
-  var clientY = event.type === 'touchmove' ? event.touches[0].clientY : event.clientY;
-  var deltaY = clientY - _resizeState.startY;
-  var ratio = (_resizeState.startHeight + deltaY) / _resizeState.startHeight;
-  var newScale = Math.round(Math.max(30, Math.min(300, _resizeState.startScale * ratio)));
-
-  _resizeState.card.dataset.cropScale = newScale;
-  applyCropScaleToCard(_resizeState.card, newScale);
-}
-
-function cropResizeEnd() {
-  if (!_resizeState) return;
-  var card = _resizeState.card;
-  var scale = parseFloat(card.dataset.cropScale) || 100;
-
-  // Save to server
-  var songId = card.dataset.songId;
-  var exerciseId = card.dataset.exerciseId;
-  fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cropScale: scale })
-  }).catch(console.error);
-
-  _resizeState = null;
-  document.removeEventListener('mousemove', cropResizeMove);
-  document.removeEventListener('mouseup', cropResizeEnd);
-  document.removeEventListener('touchmove', cropResizeMove);
-  document.removeEventListener('touchend', cropResizeEnd);
-  document.body.style.cursor = '';
-  document.body.style.userSelect = '';
-}
-
 // Zoom crop via +/- buttons
 function cropZoomBtn(btn, delta) {
   var card = btn.closest('.expanded-card-wrapper');
   if (!card) return;
   var currentScale = parseFloat(card.dataset.cropScale) || 100;
-  var newScale = Math.round(Math.max(30, Math.min(300, currentScale + delta)));
+  var newScale = Math.round(Math.max(30, Math.min(100, currentScale + delta)));
   card.dataset.cropScale = newScale;
   applyCropScaleToCard(card, newScale);
-  // Save to server
   var songId = card.dataset.songId;
   var exerciseId = card.dataset.exerciseId;
   if (songId && exerciseId) {
@@ -442,106 +402,21 @@ function cropZoomBtn(btn, delta) {
 }
 
 // Apply a scale value to all crop images in a card.
-// Default mode: sets image width as a percentage of the card (card height follows naturally).
-// Full-fit mode: sets image width in absolute pixels based on natural image size, and
-// constrains the card wrapper to that width so the card wraps the crop.
+// Scale is a percentage of the card width (100 = full width).
 function applyCropScaleToCard(card, scale) {
-  var fit = card.dataset.cropFit === 'true';
-
-  if (fit) {
-    var maxNaturalW = 0;
-    var pending = 0;
-
-    card.querySelectorAll('.card-crop-img').forEach(function(img) {
-      img.style.transform = '';
-      if (img.naturalWidth) {
-        var px = Math.round(img.naturalWidth * scale / 100);
-        img.style.width = px + 'px';
-        if (img.naturalWidth > maxNaturalW) maxNaturalW = img.naturalWidth;
-      } else {
-        pending++;
-        img.addEventListener('load', function onLoad() {
-          img.removeEventListener('load', onLoad);
-          // Re-apply once the image has loaded so naturalWidth is known
-          applyCropScaleToCard(card, parseFloat(card.dataset.cropScale) || 100);
-        });
-      }
-    });
-
-    if (!pending && maxNaturalW > 0) {
-      card.style.maxWidth = Math.round(maxNaturalW * scale / 100) + 'px';
-    }
-  } else {
-    card.style.maxWidth = '';
-    card.querySelectorAll('.card-crop-img').forEach(function(img) {
-      img.style.transform = '';
-      img.style.width = scale + '%';
-    });
-  }
-}
-
-// Set horizontal alignment of crops within their card.
-function applyCropAlignToCard(card, align) {
-  card.querySelectorAll('.card-crop-item').forEach(function(item) {
-    item.style.justifyContent = align === 'center' ? 'center' : 'flex-start';
+  var pct = Math.max(30, Math.min(100, scale));
+  card.querySelectorAll('.card-crop-img').forEach(function(img) {
+    img.style.width = pct + '%';
+    img.style.transform = '';
   });
+  card.style.maxWidth = '';
 }
 
-// Called by align-left / align-center buttons in edit mode.
-function cropAlignBtn(btn, align) {
-  var card = btn.closest('.expanded-card-wrapper');
-  if (!card) return;
-  card.dataset.cropAlign = align;
-  applyCropAlignToCard(card, align);
-  // Update active state on sibling align buttons
-  card.querySelectorAll('.card-align-btn').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.align === align);
-  });
-  var songId = card.dataset.songId;
-  var exerciseId = card.dataset.exerciseId;
-  if (songId && exerciseId) {
-    fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cropAlign: align })
-    }).catch(console.error);
-  }
-}
-
-// Toggle full-fit mode (card wraps to crop dimensions).
-function cropFitToggle(btn) {
-  var card = btn.closest('.expanded-card-wrapper');
-  if (!card) return;
-  var newFit = card.dataset.cropFit !== 'true';
-  card.dataset.cropFit = String(newFit);
-  btn.classList.toggle('active', newFit);
-  if (newFit) {
-    card.classList.add('crop-fit-full');
-  } else {
-    card.classList.remove('crop-fit-full');
-  }
-  var scale = parseFloat(card.dataset.cropScale) || 100;
-  applyCropScaleToCard(card, scale);
-  var songId = card.dataset.songId;
-  var exerciseId = card.dataset.exerciseId;
-  if (songId && exerciseId) {
-    fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cropFit: newFit })
-    }).catch(console.error);
-  }
-}
-
-// Apply saved crop scales, alignment, and fit mode on page load.
+// Apply saved crop scales on page load.
 function applyCropScales() {
   document.querySelectorAll('.expanded-card-wrapper').forEach(function(card) {
     var scale = parseFloat(card.dataset.cropScale) || 100;
-    var align = card.dataset.cropAlign || 'left';
-    var fit = card.dataset.cropFit === 'true';
-    if (fit) card.classList.add('crop-fit-full');
     applyCropScaleToCard(card, scale);
-    applyCropAlignToCard(card, align);
   });
 }
 
@@ -635,7 +510,97 @@ function isColorDark(hex) {
   return lum < 0.5;
 }
 
-// ===== View Mode Segmented Control (placeholder) =====
+// ===== View Mode Segmented Control =====
+var _viewModeStructure = null; // cached parsed structure
+var _viewModeCards = null;     // cached original card order
+
+function _getSongStructure() {
+  if (_viewModeStructure) return _viewModeStructure;
+  var view = document.getElementById('exercise-view');
+  if (!view) return [];
+  try {
+    var song = JSON.parse(view.dataset.song);
+    var structure = (song.Structure || song.structure || []).slice();
+    // Sort by order
+    structure.sort(function(a, b) { return (a.Order || a.order || 0) - (b.Order || b.order || 0); });
+    _viewModeStructure = structure;
+  } catch(e) {
+    _viewModeStructure = [];
+  }
+  return _viewModeStructure;
+}
+
+function _collectAllCards() {
+  if (_viewModeCards) return _viewModeCards;
+  var container = document.getElementById('se-exercises-container');
+  if (!container) return [];
+  _viewModeCards = Array.from(container.querySelectorAll('.expanded-card-wrapper'));
+  return _viewModeCards;
+}
+
+function _lowestStageOfCards(cards) {
+  var lowest = 5;
+  cards.forEach(function(c) {
+    var s = parseInt(c.dataset.stage) || 1;
+    if (s < lowest) lowest = s;
+  });
+  return cards.length ? lowest : 0;
+}
+
+function _pillColorStyle(stage) {
+  var colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
+  var color = colors[stage] || '#9ca3af';
+  return 'background:' + hexToRGBA(color, 0.1) + ';border-color:' + hexToRGBA(color, 0.35) + ';color:' + hexToRGBA(color, 0.7);
+}
+
+function _capitalize(s) {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function _pluralize(type) {
+  var t = type.toLowerCase();
+  if (t === 'chorus') return 'Choruses';
+  if (t.endsWith('s')) return _capitalize(t);
+  return _capitalize(t) + 's';
+}
+
+function _buildSectionGroup(groupId, label, cards) {
+  var group = document.createElement('div');
+  group.className = 'section-group';
+  group.id = 'section-' + groupId;
+  if (label) {
+    var divider = document.createElement('div');
+    divider.className = 'section-divider';
+    divider.innerHTML = '<span class="section-line"></span><span class="section-label">' + label + '</span><span class="section-line"></span>';
+    group.appendChild(divider);
+  }
+  if (cards.length === 0) {
+    var empty = document.createElement('p');
+    empty.className = 'section-empty';
+    empty.textContent = 'No exercises';
+    group.appendChild(empty);
+  } else {
+    var list = document.createElement('div');
+    list.className = 'expanded-list';
+    cards.forEach(function(card) { list.appendChild(card); });
+    group.appendChild(list);
+  }
+  return group;
+}
+
+function _buildPill(groupId, label, stage, sectionIds) {
+  var btn = document.createElement('button');
+  btn.className = 'section-pill';
+  btn.dataset.sectionId = groupId;
+  if (sectionIds) btn.dataset.sectionIds = sectionIds.join(',');
+  btn.setAttribute('style', _pillColorStyle(stage));
+  btn.setAttribute('onclick', 'toggleSectionFilter(this)');
+  btn.setAttribute('title', label);
+  btn.textContent = label;
+  return btn;
+}
+
 function setViewMode(btn) {
   var container = btn.closest('.view-mode-segmented');
   if (!container) return;
@@ -643,7 +608,139 @@ function setViewMode(btn) {
     b.classList.remove('active');
   });
   btn.classList.add('active');
-  // TODO: re-render exercise list based on btn.dataset.mode
+
+  var mode = btn.dataset.mode;
+  var structure = _getSongStructure();
+  var allCards = _collectAllCards();
+  var exerciseContainer = document.getElementById('se-exercises-container');
+  var pillNav = document.getElementById('practice-section-nav');
+
+  if (!exerciseContainer || allCards.length === 0) return;
+
+  // Clear container and pill nav
+  exerciseContainer.innerHTML = '';
+  if (pillNav) pillNav.innerHTML = '';
+
+  // Build section ID → type map and type counts
+  var sectionMap = {};
+  var typeCounts = {};
+  structure.forEach(function(sec) {
+    var id = sec.ID || sec.id;
+    var type = sec.Type || sec.type || '';
+    sectionMap[id] = type;
+    typeCounts[type] = (typeCounts[type] || 0) + 1;
+  });
+
+  if (mode === 'by-section') {
+    _renderBySection(structure, sectionMap, allCards, exerciseContainer, pillNav);
+  } else if (mode === 'transitions') {
+    _renderTransitions(structure, sectionMap, allCards, exerciseContainer, pillNav);
+  } else {
+    _renderSongOrder(structure, sectionMap, typeCounts, allCards, exerciseContainer, pillNav);
+  }
+}
+
+function _renderSongOrder(structure, sectionMap, typeCounts, allCards, exerciseContainer, pillNav) {
+  if (structure.length === 0) {
+    // Flat mode — no sections
+    var group = _buildSectionGroup('__flat__', '', allCards);
+    exerciseContainer.appendChild(group);
+    return;
+  }
+
+  var typeOccurrence = {};
+  structure.forEach(function(sec) {
+    var id = sec.ID || sec.id;
+    var type = sec.Type || sec.type || '';
+    typeOccurrence[type] = (typeOccurrence[type] || 0) + 1;
+
+    var label = _capitalize(type);
+    if (typeCounts[type] > 1) {
+      label += ' (' + typeOccurrence[type] + ')';
+    }
+
+    var cards = allCards.filter(function(c) { return c.dataset.sectionId === id; });
+    var group = _buildSectionGroup(id, label, cards);
+    exerciseContainer.appendChild(group);
+
+    if (pillNav) {
+      var stage = _lowestStageOfCards(cards);
+      var pill = _buildPill(id, label, stage, [id]);
+      if (cards.length === 0) pill.disabled = true;
+      pillNav.appendChild(pill);
+    }
+  });
+}
+
+function _renderBySection(structure, sectionMap, allCards, exerciseContainer, pillNav) {
+  // Determine unique types in first-appearance order
+  var seenTypes = {};
+  var typeOrder = [];
+  structure.forEach(function(sec) {
+    var type = sec.Type || sec.type || '';
+    if (!seenTypes[type]) {
+      seenTypes[type] = [];
+      typeOrder.push(type);
+    }
+    seenTypes[type].push(sec.ID || sec.id);
+  });
+
+  typeOrder.forEach(function(type) {
+    var sectionIds = seenTypes[type];
+    var label = sectionIds.length > 1 ? _pluralize(type) : _capitalize(type);
+    var groupId = 'type-' + type;
+
+    var cards = allCards.filter(function(c) {
+      return sectionIds.indexOf(c.dataset.sectionId) !== -1;
+    });
+
+    var group = _buildSectionGroup(groupId, label, cards);
+    exerciseContainer.appendChild(group);
+
+    if (pillNav) {
+      var stage = _lowestStageOfCards(cards);
+      var pill = _buildPill(groupId, label, stage, sectionIds);
+      if (cards.length === 0) pill.disabled = true;
+      pillNav.appendChild(pill);
+    }
+  });
+}
+
+function _renderTransitions(structure, sectionMap, allCards, exerciseContainer, pillNav) {
+  if (structure.length < 2) {
+    // Not enough sections for transitions — show flat
+    var group = _buildSectionGroup('__flat__', '', allCards);
+    exerciseContainer.appendChild(group);
+    return;
+  }
+
+  for (var i = 0; i < structure.length - 1; i++) {
+    var secA = structure[i];
+    var secB = structure[i + 1];
+    var idA = secA.ID || secA.id;
+    var idB = secB.ID || secB.id;
+    var typeA = _capitalize(secA.Type || secA.type || '');
+    var typeB = _capitalize(secB.Type || secB.type || '');
+    var label = typeA + ' \u2192 ' + typeB;
+    var groupId = 'trans-' + i;
+
+    var matchingCards = allCards.filter(function(c) {
+      return c.dataset.sectionId === idA || c.dataset.sectionId === idB;
+    });
+
+    // Clone cards since a section's cards may appear in multiple transition groups
+    var clones = matchingCards.map(function(c) { return c.cloneNode(true); });
+
+    var group = _buildSectionGroup(groupId, label, clones);
+    exerciseContainer.appendChild(group);
+
+    if (pillNav) {
+      var stage = _lowestStageOfCards(matchingCards);
+      var pill = _buildPill(groupId, label, stage, [idA, idB]);
+      if (matchingCards.length === 0) pill.disabled = true;
+      pillNav.appendChild(pill);
+    }
+  }
 }
 
 // ===== Section Filter Pills =====
@@ -662,12 +759,11 @@ function toggleSectionFilter(btn) {
   }
 }
 
-function applySectionFilter(sectionId) {
+function applySectionFilter(groupId) {
   document.querySelectorAll('.section-group').forEach(function(group) {
     var id = group.id.replace('section-', '');
-    if (id === sectionId) {
+    if (id === groupId) {
       group.style.display = '';
-      // Hide the section divider inside the active section (redundant when filtering)
       var divider = group.querySelector('.section-divider');
       if (divider) divider.style.display = 'none';
     } else {
@@ -687,22 +783,32 @@ function clearSectionFilter() {
   });
 }
 
-// ===== Display Settings Drawer =====
+// ===== Display Settings Dropdown =====
 function toggleDisplayDrawer() {
-  var drawer = document.getElementById('display-settings-drawer');
+  var actions = document.getElementById('display-actions');
   var btn = document.getElementById('display-toggle-btn');
-  if (!drawer) return;
-  var isOpen = drawer.style.display !== 'none';
-  drawer.style.display = isOpen ? 'none' : 'block';
+  if (!actions) return;
+  var isOpen = actions.classList.contains('visible');
+  actions.classList.toggle('visible', !isOpen);
   if (btn) btn.classList.toggle('active', !isOpen);
+}
+
+function toggleCleanViewBtn(key, btn) {
+  toggleCleanView(key);
 }
 
 // Close panels on Escape
 (function() {
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
+      // Close display actions dropdown
+      var displayActions = document.getElementById('display-actions');
+      var displayBtn = document.getElementById('display-toggle-btn');
+      if (displayActions && displayActions.classList.contains('visible')) {
+        displayActions.classList.remove('visible');
+        if (displayBtn) displayBtn.classList.remove('active');
+      }
       var panels = [
-        { el: 'display-settings-drawer', btn: 'display-toggle-btn' },
         { el: 'song-notes-section', btn: 'notes-toggle-btn' },
         { el: 'metronome-panel', btn: 'metronome-toggle-btn' },
         { el: 'stats-panel', btn: 'stats-toggle-btn' }
@@ -715,6 +821,13 @@ function toggleDisplayDrawer() {
           if (btn) btn.classList.remove('active');
         }
       });
+      // Close master zoom drawer
+      var mzActions = document.getElementById('master-zoom-actions');
+      var mzBtn = document.getElementById('master-zoom-toggle-btn');
+      if (mzActions && mzActions.classList.contains('visible')) {
+        mzActions.classList.remove('visible');
+        if (mzBtn) mzBtn.classList.remove('active');
+      }
     }
   });
 })();
@@ -743,17 +856,57 @@ function setCardAlignment(btn) {
   // TODO: apply alignment btn.dataset.align to exercise cards
 }
 
-// ===== Clean View Toggles (placeholder) =====
-function toggleCleanView(key, checked) {
+// ===== Clean View Toggles =====
+function toggleCleanView(key) {
   var view = document.getElementById('exercise-view');
   if (!view) return;
   var cls = 'cv-hide-' + key;
-  if (checked) {
-    view.classList.remove(cls);
-  } else {
-    view.classList.add(cls);
-  }
-  // TODO: persist via PATCH /api/songs/{songId}/display
+  var isNowHidden = view.classList.toggle(cls);
+
+  // Persist via PATCH /api/songs/{songId}/display
+  var songId = view.dataset.songId;
+  if (!songId) return;
+  var fieldMap = { titles:'hideTitles', controls:'hideControls', dividers:'hideDividers', stages:'hideStages', cards:'hideCards' };
+  var field = fieldMap[key];
+  if (!field) return;
+  var body = {};
+  body[field] = isNowHidden;
+  fetch('/api/songs/' + songId + '/display', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).catch(console.error);
+}
+
+// ===== Master Zoom =====
+function toggleMasterZoom() {
+  var actions = document.getElementById('master-zoom-actions');
+  var btn = document.getElementById('master-zoom-toggle-btn');
+  if (!actions) return;
+  var isOpen = actions.classList.contains('visible');
+  actions.classList.toggle('visible', !isOpen);
+  if (btn) btn.classList.toggle('active', !isOpen);
+}
+
+function masterZoom(delta) {
+  var cards = document.querySelectorAll('.expanded-card-wrapper');
+  cards.forEach(function(card) {
+    var currentScale = parseFloat(card.dataset.cropScale) || 100;
+    var newScale = Math.round(Math.max(30, Math.min(100, currentScale + delta)));
+    card.dataset.cropScale = newScale;
+    applyCropScaleToCard(card, newScale);
+
+    // Save to server
+    var songId = card.dataset.songId;
+    var exerciseId = card.dataset.exerciseId;
+    if (songId && exerciseId) {
+      fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cropScale: newScale })
+      }).catch(console.error);
+    }
+  });
 }
 
 // ===== Smart Practice (placeholder) =====

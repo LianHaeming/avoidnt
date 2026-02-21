@@ -53,7 +53,12 @@ type Song struct {
 	Structure   []Section  `json:"structure"`
 	Exercises   []Exercise `json:"exercises"`
 	CreatedAt   string     `json:"createdAt"`
-	CropBgColor *string    `json:"cropBgColor,omitempty"`
+	CropBgColor  *string `json:"cropBgColor,omitempty"`
+	HideTitles   bool    `json:"hideTitles,omitempty"`
+	HideControls bool    `json:"hideControls,omitempty"`
+	HideDividers bool    `json:"hideDividers,omitempty"`
+	HideStages   bool    `json:"hideStages,omitempty"`
+	HideCards    bool    `json:"hideCards,omitempty"`
 }
 
 // SongSummary is used for the browse/list view.

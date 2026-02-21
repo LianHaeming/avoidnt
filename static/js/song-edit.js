@@ -187,11 +187,13 @@
   }
 
   function toggleEditVisibility(isEdit) {
-    // Toggle se-view-text / se-edit-text
+    // Toggle se-view-text / se-edit-text (skip header-right buttons so they stay visible in edit mode)
     document.querySelectorAll('.se-view-text').forEach(function(el) {
+      if (el.closest('.song-header-right') && !el.closest('.expanded-card-wrapper')) return;
       el.style.display = isEdit ? 'none' : '';
     });
     document.querySelectorAll('.se-edit-text').forEach(function(el) {
+      if (el.closest('.song-header-right') && !el.closest('.expanded-card-wrapper')) return;
       el.style.display = isEdit ? '' : 'none';
     });
 

@@ -156,7 +156,12 @@ func (d *Deps) HandlePatchExercise(w http.ResponseWriter, r *http.Request) {
 
 // PatchSongDisplayRequest is the JSON body for PATCH song display settings.
 type PatchSongDisplayRequest struct {
-	CropBgColor *string `json:"cropBgColor"`
+	CropBgColor  *string `json:"cropBgColor"`
+	HideTitles   *bool   `json:"hideTitles"`
+	HideControls *bool   `json:"hideControls"`
+	HideDividers *bool   `json:"hideDividers"`
+	HideStages   *bool   `json:"hideStages"`
+	HideCards    *bool   `json:"hideCards"`
 }
 
 // HandlePatchSongDisplay updates song-level display settings (crop background color, etc.).
@@ -181,6 +186,21 @@ func (d *Deps) HandlePatchSongDisplay(w http.ResponseWriter, r *http.Request) {
 		} else {
 			song.CropBgColor = req.CropBgColor
 		}
+	}
+	if req.HideTitles != nil {
+		song.HideTitles = *req.HideTitles
+	}
+	if req.HideControls != nil {
+		song.HideControls = *req.HideControls
+	}
+	if req.HideDividers != nil {
+		song.HideDividers = *req.HideDividers
+	}
+	if req.HideStages != nil {
+		song.HideStages = *req.HideStages
+	}
+	if req.HideCards != nil {
+		song.HideCards = *req.HideCards
 	}
 
 	if err := d.Songs.Save(song); err != nil {
