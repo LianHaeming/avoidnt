@@ -10,6 +10,8 @@ type Deps struct {
 	Songs     *storage.SongStore
 	Settings  *storage.SettingsStore
 	Jobs      *storage.JobStore
+	DailyLogs *storage.DailyLogStore
+	StageLogs *storage.StageLogStore
 	Templates *tmpl.Templates
 	OpenAIKey string
 	PdfOutput string

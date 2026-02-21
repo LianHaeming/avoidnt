@@ -214,7 +214,7 @@
         </div>
       </div>
 
-      <!-- Stats Panel -->
+      <!-- Stats Panel (old inline, kept for reference but hidden — replaced by drawer) -->
       {{if gt .ExerciseCount 0}}
       <div class="stats-panel-inline" id="stats-panel" style="display:none">
         <div class="progress-detail-grid">
@@ -410,6 +410,111 @@
   </div>
 </div>
 
+<!-- Stats Drawer Overlay -->
+{{if gt .ExerciseCount 0}}
+<div class="stats-drawer-backdrop" id="stats-drawer-backdrop" style="display:none" onclick="closeStatsDrawer()"></div>
+<div class="stats-drawer" id="stats-drawer" style="display:none"
+     data-song-id="{{.Song.ID}}"
+     data-stage-names="{{json .Settings.StageNames}}"
+     data-stage-counts="{{json .StageCounts}}"
+     data-exercise-count="{{.ExerciseCount}}"
+     data-total-time="{{.TotalPracticeTime}}"
+     data-total-reps="{{.TotalReps}}"
+     data-song-json="{{json .Song}}">
+  <div class="stats-drawer-handle" onclick="closeStatsDrawer()">
+    <div class="stats-drawer-handle-bar"></div>
+  </div>
+  <button class="stats-drawer-close" onclick="closeStatsDrawer()" title="Close">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="stats-drawer-scroll">
+    <h2 class="stats-drawer-title">Practice Statistics</h2>
+
+    <!-- Section 1: Song Health Bar -->
+    <section class="stats-section" id="stats-health-bar-section">
+      <h3 class="stats-section-heading">Song Health</h3>
+      <div class="stats-health-summary">
+        <span class="stats-health-pct" id="stats-health-pct"></span>
+        <span class="stats-health-detail" id="stats-health-detail"></span>
+      </div>
+      <div class="progress-stage-bar stats-health-bar" id="stats-health-bar"></div>
+      <div class="stats-health-legend" id="stats-health-legend"></div>
+    </section>
+
+    <!-- Section 2: Weekly Practice Chart -->
+    <section class="stats-section" id="stats-weekly-section">
+      <h3 class="stats-section-heading">Weekly Practice</h3>
+      <div class="stats-weekly-summary" id="stats-weekly-summary">
+        <span class="stats-weekly-stat" id="stats-weekly-total">—</span>
+        <span class="stats-weekly-stat" id="stats-weekly-avg">—</span>
+        <span class="stats-weekly-stat" id="stats-weekly-streak">—</span>
+      </div>
+      <div class="stats-weekly-nav">
+        <button class="stats-week-nav-btn" id="stats-week-prev" onclick="statsWeekNav(-1)" title="Previous week">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="stats-week-label" id="stats-week-label">This week</span>
+        <button class="stats-week-nav-btn" id="stats-week-next" onclick="statsWeekNav(1)" title="Next week">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="stats-weekly-chart" id="stats-weekly-chart">
+        <div class="stats-weekly-bars" id="stats-weekly-bars"></div>
+        <div class="stats-weekly-labels" id="stats-weekly-labels"></div>
+      </div>
+      <div class="stats-weekly-empty" id="stats-weekly-empty" style="display:none">
+        No practice logged this week
+      </div>
+    </section>
+
+    <!-- Section 3: Song Heat Map (Raw) -->
+    <section class="stats-section" id="stats-heatmap-section">
+      <h3 class="stats-section-heading">Your Progress</h3>
+      <div class="stats-heatmap" id="stats-heatmap"></div>
+    </section>
+
+    <!-- Section 3b: Song Heat Map (Adjusted) -->
+    <section class="stats-section" id="stats-heatmap-adjusted-section" style="display:none">
+      <h3 class="stats-section-heading">Adjusted Progress <span class="stats-heading-hint">(with similarity transfer)</span></h3>
+      <div class="stats-heatmap" id="stats-heatmap-adjusted"></div>
+    </section>
+
+    <!-- Section 4: Per-Card Detail (expandable) -->
+    <section class="stats-section" id="stats-card-detail-section" style="display:none">
+      <h3 class="stats-section-heading">Card Detail</h3>
+      <div class="stats-card-detail" id="stats-card-detail"></div>
+    </section>
+
+    <!-- Section 4b: Similarity Groups Manager -->
+    <section class="stats-section" id="stats-similarity-section">
+      <h3 class="stats-section-heading">Similarity Groups</h3>
+      <div class="sim-group-controls">
+        <button class="sim-group-add-btn" onclick="startSimGroupSelect('identical')">+ Identical Group</button>
+        <button class="sim-group-add-btn" onclick="startSimGroupSelect('similar')">+ Similar Group</button>
+      </div>
+      <div id="sim-group-list"></div>
+    </section>
+
+    <!-- Section 5: Practice Recommendation -->
+    <section class="stats-section" id="stats-recommend-section">
+      <h3 class="stats-section-heading">What to Practice Next</h3>
+      <div class="stats-recommend" id="stats-recommend">
+        <div class="stats-recommend-empty">Start practicing to get recommendations</div>
+      </div>
+    </section>
+
+    <!-- Section 6: Practice History -->
+    <section class="stats-section" id="stats-history-section">
+      <h3 class="stats-section-heading">Practice History</h3>
+      <div class="stats-history" id="stats-history">
+        <div class="stats-history-empty">Your practice history will appear here after you practice</div>
+      </div>
+      <button class="stats-history-more" id="stats-history-more" style="display:none" onclick="loadMoreHistory()">Show more</button>
+    </section>
+  </div>
+</div>
+{{end}}
+
 <!-- Confirm Modal -->
 <div class="confirm-modal-backdrop" id="confirm-modal-backdrop" style="display:none">
   <div class="confirm-modal">
@@ -423,4 +528,5 @@
 
 <script src="/static/js/timer.js?v={{assetVer}}"></script>
 <script src="/static/js/song-edit.js?v={{assetVer}}"></script>
+<script src="/static/js/stats-drawer.js?v={{assetVer}}"></script>
 {{end}}

@@ -91,6 +91,19 @@ function cardAddReps(btn, count) {
       lastPracticedAt: new Date().toISOString()
     })
   }).catch(console.error);
+
+  // Also log reps to daily log
+  var today = new Date().toISOString().slice(0, 10);
+  fetch('/api/songs/' + songId + '/daily-log', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      date: today,
+      exerciseId: exerciseId,
+      seconds: 0,
+      reps: count
+    })
+  }).catch(console.error);
 }
 
 function closePractice() {
@@ -106,6 +119,7 @@ function saveTime() {
   if (!_activeCard) return;
   var songId = _activeCard.dataset.songId;
   var exerciseId = _activeCard.dataset.exerciseId;
+  var secondsDelta = _localSeconds - _lastSaveTime;
   fetch('/api/songs/' + songId + '/exercises/' + exerciseId, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -117,6 +131,21 @@ function saveTime() {
     _lastSaveTime = _localSeconds;
     _activeCard.dataset.totalSeconds = _localSeconds;
   }).catch(console.error);
+
+  // Also log to daily log
+  if (secondsDelta > 0) {
+    var today = new Date().toISOString().slice(0, 10);
+    fetch('/api/songs/' + songId + '/daily-log', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: today,
+        exerciseId: exerciseId,
+        seconds: secondsDelta,
+        reps: 0
+      })
+    }).catch(console.error);
+  }
 }
 
 // ===== Inactivity =====

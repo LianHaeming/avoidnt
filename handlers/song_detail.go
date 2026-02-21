@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/LianHaeming/avoidnt/models"
 )
@@ -41,6 +43,9 @@ func (d *Deps) HandleSongDetail(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+
+	// Migrate existing practice data to daily/stage logs if needed
+	d.migrateExistingData(song)
 
 	settings := d.Settings.Get()
 	groups := buildSectionGroups(song)
@@ -168,4 +173,55 @@ func capitalize(s string) string {
 
 func itoa(n int) string {
 	return fmt.Sprintf("%d", n)
+}
+
+// migrateExistingData creates synthetic daily-log and stage-log entries
+// from existing cumulative practice data on first load.
+func (d *Deps) migrateExistingData(song *models.Song) {
+	if len(song.Exercises) == 0 {
+		return
+	}
+
+	// Check if any exercise has practice data
+	hasPracticeData := false
+	for _, ex := range song.Exercises {
+		if ex.TotalPracticedSeconds > 0 || ex.TotalReps > 0 {
+			hasPracticeData = true
+			break
+		}
+	}
+	if !hasPracticeData {
+		return
+	}
+
+	today := time.Now().UTC().Format("2006-01-02")
+
+	// Migrate daily log: create a synthetic entry for today with existing totals
+	if !d.DailyLogs.HasLogs(song.ID) {
+		for _, ex := range song.Exercises {
+			if ex.TotalPracticedSeconds > 0 || ex.TotalReps > 0 {
+				if err := d.DailyLogs.Upsert(song.ID, today, ex.ID, ex.TotalPracticedSeconds, ex.TotalReps); err != nil {
+					log.Printf("Migration: failed to create daily log for %s/%s: %v", song.ID, ex.ID, err)
+				}
+			}
+		}
+	}
+
+	// Migrate stage log: create initial stage entries
+	if !d.StageLogs.HasLogs(song.ID) {
+		var entries []models.StageLogEntry
+		now := time.Now().UTC().Format(time.RFC3339)
+		for _, ex := range song.Exercises {
+			entries = append(entries, models.StageLogEntry{
+				ExerciseID: ex.ID,
+				Stage:      ex.Stage,
+				Timestamp:  now,
+			})
+		}
+		if len(entries) > 0 {
+			if err := d.StageLogs.BulkAppend(song.ID, entries); err != nil {
+				log.Printf("Migration: failed to create stage log for %s: %v", song.ID, err)
+			}
+		}
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/LianHaeming/avoidnt/models"
 )
@@ -107,8 +108,14 @@ func (d *Deps) HandlePatchExercise(w http.ResponseWriter, r *http.Request) {
 	for i := range song.Exercises {
 		ex := &song.Exercises[i]
 		if ex.ID == exerciseID {
-			if req.Stage != nil {
+			if req.Stage != nil && *req.Stage != ex.Stage {
 				ex.Stage = *req.Stage
+				// Append to stage log
+				d.StageLogs.Append(songID, models.StageLogEntry{
+					ExerciseID: exerciseID,
+					Stage:      *req.Stage,
+					Timestamp:  time.Now().UTC().Format(time.RFC3339),
+				})
 			}
 			if req.TotalPracticedSeconds != nil {
 				ex.TotalPracticedSeconds = *req.TotalPracticedSeconds
@@ -144,6 +151,49 @@ func (d *Deps) HandlePatchExercise(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		jsonError(w, "Exercise not found", http.StatusNotFound)
 		return
+	}
+
+	// Sync identical group members
+	for _, group := range song.SimilarityGroups {
+		if group.Type != "identical" {
+			continue
+		}
+		inGroup := false
+		for _, id := range group.ExerciseIDs {
+			if id == exerciseID {
+				inGroup = true
+				break
+			}
+		}
+		if !inGroup {
+			continue
+		}
+		// Find the source exercise to get its current values
+		var source *models.Exercise
+		for i := range song.Exercises {
+			if song.Exercises[i].ID == exerciseID {
+				source = &song.Exercises[i]
+				break
+			}
+		}
+		if source == nil {
+			break
+		}
+		// Sync all group members
+		for _, id := range group.ExerciseIDs {
+			if id == exerciseID {
+				continue
+			}
+			for i := range song.Exercises {
+				if song.Exercises[i].ID == id {
+					song.Exercises[i].Stage = source.Stage
+					song.Exercises[i].TotalPracticedSeconds = source.TotalPracticedSeconds
+					song.Exercises[i].TotalReps = source.TotalReps
+					song.Exercises[i].LastPracticedAt = source.LastPracticedAt
+				}
+			}
+		}
+		break
 	}
 
 	if err := d.Songs.Save(song); err != nil {
@@ -345,6 +395,72 @@ func (d *Deps) HandleConvertPDF(w http.ResponseWriter, r *http.Request) {
 		"pageCount": pageCount,
 		"pages":     pages,
 	})
+}
+
+// HandleSaveSimilarityGroups replaces all similarity groups for a song.
+func (d *Deps) HandleSaveSimilarityGroups(w http.ResponseWriter, r *http.Request) {
+	songID := r.PathValue("songId")
+
+	song, err := d.Songs.Get(songID)
+	if err != nil || song == nil {
+		jsonError(w, "Song not found", http.StatusNotFound)
+		return
+	}
+
+	var groups []models.SimilarityGroup
+	if err := json.NewDecoder(r.Body).Decode(&groups); err != nil {
+		jsonError(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	song.SimilarityGroups = groups
+
+	// For identical groups, sync practice data: all exercises share the max values
+	for _, group := range groups {
+		if group.Type != "identical" {
+			continue
+		}
+		// Find the exercise with the most practice data
+		var bestStage, bestSeconds, bestReps int
+		var bestLastPracticed *string
+		for _, exID := range group.ExerciseIDs {
+			for i := range song.Exercises {
+				if song.Exercises[i].ID == exID {
+					ex := &song.Exercises[i]
+					if ex.Stage > bestStage {
+						bestStage = ex.Stage
+					}
+					if ex.TotalPracticedSeconds > bestSeconds {
+						bestSeconds = ex.TotalPracticedSeconds
+					}
+					if ex.TotalReps > bestReps {
+						bestReps = ex.TotalReps
+					}
+					if ex.LastPracticedAt != nil && (bestLastPracticed == nil || *ex.LastPracticedAt > *bestLastPracticed) {
+						bestLastPracticed = ex.LastPracticedAt
+					}
+				}
+			}
+		}
+		// Sync all exercises in the group to the best values
+		for _, exID := range group.ExerciseIDs {
+			for i := range song.Exercises {
+				if song.Exercises[i].ID == exID {
+					song.Exercises[i].Stage = bestStage
+					song.Exercises[i].TotalPracticedSeconds = bestSeconds
+					song.Exercises[i].TotalReps = bestReps
+					song.Exercises[i].LastPracticedAt = bestLastPracticed
+				}
+			}
+		}
+	}
+
+	if err := d.Songs.Save(song); err != nil {
+		jsonError(w, "Failed to save", http.StatusInternalServerError)
+		return
+	}
+
+	jsonOK(w, map[string]any{"success": true})
 }
 
 // --- JSON helpers ---

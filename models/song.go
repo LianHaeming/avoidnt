@@ -23,6 +23,13 @@ type Section struct {
 	Order int    `json:"order"`
 }
 
+// SimilarityGroup links exercises that share practice transfer.
+type SimilarityGroup struct {
+	ID          string   `json:"id"`
+	Type        string   `json:"type"` // "identical" or "similar"
+	ExerciseIDs []string `json:"exerciseIds"`
+}
+
 // Exercise contains one or more crops to practice.
 type Exercise struct {
 	ID                    string   `json:"id"`
@@ -38,6 +45,9 @@ type Exercise struct {
 	CropScale             *float64 `json:"cropScale,omitempty"`
 	CropAlign             *string  `json:"cropAlign,omitempty"`
 	CropFit               *bool    `json:"cropFit,omitempty"`
+	IsTransition          bool     `json:"isTransition,omitempty"`
+	TransitionBetween     [2]string `json:"transitionBetween,omitempty"`
+	IsTracked             bool     `json:"isTracked,omitempty"`
 }
 
 // Song is the top-level domain model.
@@ -51,8 +61,9 @@ type Song struct {
 	JobID       string     `json:"jobId"`
 	PageCount   int        `json:"pageCount"`
 	Structure   []Section  `json:"structure"`
-	Exercises   []Exercise `json:"exercises"`
-	CreatedAt   string     `json:"createdAt"`
+	Exercises        []Exercise        `json:"exercises"`
+	SimilarityGroups []SimilarityGroup `json:"similarityGroups,omitempty"`
+	CreatedAt        string            `json:"createdAt"`
 	CropBgColor  *string `json:"cropBgColor,omitempty"`
 	HideTitles   bool    `json:"hideTitles,omitempty"`
 	HideControls bool    `json:"hideControls,omitempty"`

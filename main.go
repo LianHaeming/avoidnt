@@ -35,6 +35,8 @@ func main() {
 	songStore := storage.NewSongStore(songsPath)
 	settingsStore := storage.NewSettingsStore(settingsPath)
 	jobStore := storage.NewJobStore(pdfOutputPath)
+	dailyLogStore := storage.NewDailyLogStore(songsPath)
+	stageLogStore := storage.NewStageLogStore(songsPath)
 
 	// Parse templates
 	templates := tmpl.Load(assetVer)
@@ -44,6 +46,8 @@ func main() {
 		Songs:     songStore,
 		Settings:  settingsStore,
 		Jobs:      jobStore,
+		DailyLogs: dailyLogStore,
+		StageLogs: stageLogStore,
 		Templates: templates,
 		OpenAIKey: openaiKey,
 		PdfOutput: pdfOutputPath,
@@ -70,7 +74,15 @@ func main() {
 	mux.HandleFunc("PATCH /api/songs/{songId}/exercises/{exerciseId}", deps.HandlePatchExercise)
 	mux.HandleFunc("PATCH /api/songs/{songId}/display", deps.HandlePatchSongDisplay)
 	mux.HandleFunc("POST /api/songs/{songId}/regenerate-previews", deps.HandleRegeneratePreviews)
+	mux.HandleFunc("PUT /api/songs/{songId}/similarity-groups", deps.HandleSaveSimilarityGroups)
 	mux.HandleFunc("GET /api/songs/{songId}/preview/{cropId}", deps.HandlePreview)
+
+	// Daily log & stage log
+	mux.HandleFunc("GET /api/songs/{songId}/daily-log", deps.HandleGetDailyLog)
+	mux.HandleFunc("PATCH /api/songs/{songId}/daily-log", deps.HandlePatchDailyLog)
+	mux.HandleFunc("GET /api/songs/{songId}/stage-log", deps.HandleGetStageLog)
+	mux.HandleFunc("POST /api/songs/{songId}/transitions", deps.HandleToggleTransition)
+	mux.HandleFunc("GET /api/songs/{songId}/stats/recommend", deps.HandleGetRecommendations)
 
 	// Settings
 	mux.HandleFunc("GET /api/settings", deps.HandleGetSettings)
