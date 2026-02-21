@@ -925,15 +925,17 @@ function toggleSmartPractice(btn) {
   // TODO: reorder exercises based on recommendation algorithm
 }
 
-// ===== Progress Summary Bar =====
-function toggleStats() {
+// ===== Progress Summary Bar / Stats Drawer =====
+// toggleStats is defined in stats-drawer.js for the full drawer on song-detail pages.
+// Only define the fallback if stats-drawer.js hasn't already provided it.
+window.toggleStats = window.toggleStats || function() {
   var panel = document.getElementById('stats-panel');
   var btn = document.getElementById('stats-toggle-btn');
   if (!panel) return;
   var isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
   if (btn) btn.classList.toggle('active', !isOpen);
-}
+};
 
 // Keep old name as alias in case anything calls it
 function toggleProgressExpand() { toggleStats(); }
