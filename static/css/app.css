@@ -2912,6 +2912,39 @@ body:has(.dark-mode) { background: #191919; }
   text-align:center; padding:24px; color:#9ca3af;
   font-size:0.85rem;
 }
+.stats-bar-wrapper.active .stats-bar {
+  outline:2px solid #3b82f6; outline-offset:1px; border-radius:4px 4px 0 0;
+}
+.stats-chart-legend {
+  display:flex; flex-wrap:wrap; gap:8px 12px;
+  margin-top:10px; padding:0 4px;
+}
+.stats-chart-legend-item {
+  display:flex; align-items:center; gap:5px;
+  font-size:0.7rem; color:#6b7280;
+}
+.stats-chart-legend-dot {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.stats-bar-detail {
+  margin-top:12px; padding:12px 14px;
+  background:#f9fafb; border-radius:10px;
+  transition:max-height 0.3s ease;
+}
+.stats-bar-detail-header {
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin-bottom:8px;
+}
+.stats-bar-detail-date { font-weight:600; font-size:0.85rem; color:#1d1d1f; }
+.stats-bar-detail-total { font-size:0.75rem; color:#9ca3af; }
+.stats-bar-detail-pills {
+  display:flex; flex-wrap:wrap; gap:6px;
+}
+.stats-bar-detail-pill {
+  padding:4px 10px; border-radius:12px;
+  font-size:0.75rem; font-weight:500;
+  white-space:nowrap;
+}
 
 /* Heat map */
 .stats-heatmap { margin-top:8px; }
@@ -2968,6 +3001,44 @@ body:has(.dark-mode) { background: #191919; }
 }
 .stats-heatmap-empty {
   text-align:center; padding:16px; color:#9ca3af; font-size:0.85rem;
+}
+
+/* Stats group toggle */
+.stats-group-toggle {
+  display:flex; justify-content:center; margin-bottom:16px;
+}
+
+/* Health bar sectioned mode */
+.health-bar-sectioned {
+  display:flex; flex-direction:column; gap:6px;
+  height:auto !important; background:transparent !important;
+  border-radius:0 !important; overflow:visible !important;
+}
+.health-bar-type-row {
+  display:flex; align-items:center; gap:8px;
+  animation:statsGroupFadeIn 0.25s ease;
+}
+.health-bar-type-label {
+  font-size:0.7rem; font-weight:600; color:#6b7280;
+  min-width:70px; text-align:right; flex-shrink:0;
+}
+.health-bar-type-bar {
+  flex:1; height:8px;
+}
+.health-bar-type-count {
+  font-size:0.65rem; color:#9ca3af; min-width:16px; flex-shrink:0;
+}
+
+/* Animations for mode switching */
+@keyframes statsGroupFadeIn {
+  from { opacity:0; transform:translateY(-4px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.stats-heatmap-section {
+  animation:statsGroupFadeIn 0.25s ease;
+}
+.stats-chart-legend-item {
+  animation:statsGroupFadeIn 0.2s ease;
 }
 
 /* Per-card detail */
@@ -3027,94 +3098,6 @@ body:has(.dark-mode) { background: #191919; }
   font-size:0.6rem; color:#9ca3af; margin-top:3px;
 }
 
-/* Practice history */
-.stats-history-entry {
-  padding:12px 0; border-bottom:1px solid #f3f4f6;
-}
-.stats-history-entry:last-child { border-bottom:none; }
-.stats-history-date {
-  font-size:0.85rem; font-weight:600; color:#1d1d1f;
-  margin-bottom:4px;
-}
-.stats-history-summary {
-  font-size:0.8rem; color:#6b7280; margin-bottom:8px;
-}
-.stats-history-pills {
-  display:flex; flex-wrap:wrap; gap:4px;
-}
-.stats-history-pill {
-  font-size:0.65rem; font-weight:600;
-  padding:2px 8px; border-radius:10px;
-  white-space:nowrap;
-}
-.stats-history-empty {
-  text-align:center; padding:20px; color:#9ca3af;
-  font-size:0.85rem;
-}
-.stats-history-more {
-  display:block; width:100%; padding:10px;
-  margin-top:8px; background:none; border:1px solid #e5e7eb;
-  border-radius:8px; cursor:pointer; color:#6b7280;
-  font-size:0.8rem; text-align:center;
-}
-.stats-history-more:hover { background:#f9fafb; }
-
-/* Recommendation */
-.stats-recommend-empty {
-  text-align:center; padding:20px; color:#9ca3af;
-  font-size:0.85rem;
-}
-.stats-recommend-header {
-  display:flex; justify-content:space-between; align-items:baseline;
-  margin-bottom:12px;
-}
-.stats-recommend-header strong { font-size:1rem; color:#1d1d1f; }
-.stats-recommend-time {
-  font-size:0.8rem; color:#9ca3af; font-weight:500;
-}
-.stats-recommend-list {
-  list-style:none; padding:0; margin:0;
-  counter-reset:rec-counter;
-}
-.stats-recommend-item {
-  display:flex; align-items:center; gap:10px;
-  padding:10px 12px; margin-bottom:6px;
-  background:#f9fafb; border-radius:10px;
-  counter-increment:rec-counter;
-  transition:background 0.15s;
-}
-.stats-recommend-item:hover { background:#f3f4f6; }
-.stats-recommend-emoji { font-size:1.1rem; flex-shrink:0; }
-.stats-recommend-content { flex:1; display:flex; flex-direction:column; gap:2px; }
-.stats-recommend-name {
-  font-size:0.85rem; font-weight:600; color:#1d1d1f;
-}
-.stats-recommend-reason {
-  font-size:0.7rem; color:#9ca3af;
-}
-.stats-recommend-mins {
-  font-size:0.8rem; font-weight:600; color:#6b7280;
-  white-space:nowrap;
-}
-
-/* Recommended highlight on heatmap cells */
-.stats-heatmap-cell.recommended {
-  outline:2px solid #f59e0b; outline-offset:2px;
-  animation:recommendPulse 1.5s ease-in-out infinite;
-}
-@keyframes recommendPulse {
-  0%, 100% { outline-color:rgba(245,158,11,0.8); }
-  50% { outline-color:rgba(245,158,11,0.3); }
-}
-
-/* Dark mode recommendations */
-.dark-mode .stats-recommend-header strong { color:#f5f5f7; }
-.dark-mode .stats-recommend-time { color:#636366; }
-.dark-mode .stats-recommend-item { background:#2a2a2c; }
-.dark-mode .stats-recommend-item:hover { background:#3a3a3c; }
-.dark-mode .stats-recommend-name { color:#f5f5f7; }
-.dark-mode .stats-recommend-reason { color:#636366; }
-.dark-mode .stats-recommend-mins { color:#8e8e93; }
 
 /* Dark mode overrides for stats drawer */
 .dark-mode .stats-drawer {
@@ -3138,10 +3121,18 @@ body:has(.dark-mode) { background: #191919; }
 .dark-mode .stats-bar-time { color:#636366; }
 .dark-mode .stats-day-label { color:#636366; }
 .dark-mode .stats-weekly-empty { color:#636366; }
+.dark-mode .stats-bar-wrapper.active .stats-bar { outline-color:#5a9cf5; }
+.dark-mode .stats-chart-legend-item { color:#8e8e93; }
+.dark-mode .stats-bar-wrapper.active .stats-bar { outline-color:#5a9cf5; }
+.dark-mode .stats-bar-detail { background:#2a2a2c; }
+.dark-mode .stats-bar-detail-date { color:#f5f5f7; }
+.dark-mode .stats-bar-detail-total { color:#636366; }
 .dark-mode .stats-heatmap-label { color:#636366; }
 .dark-mode .stats-heatmap-cell:hover { box-shadow:0 2px 8px rgba(0,0,0,0.3); }
 .dark-mode .stats-heatmap-cell.active { outline-color:#3b82f6; }
 .dark-mode .stats-heatmap-empty { color:#636366; }
+.dark-mode .health-bar-type-label { color:#8e8e93; }
+.dark-mode .health-bar-type-count { color:#636366; }
 .dark-mode .stats-card-header strong { color:#f5f5f7; }
 .dark-mode .stats-card-section-label { color:#636366; }
 .dark-mode .stats-card-stat { background:#2a2a2c; }
@@ -3150,113 +3141,4 @@ body:has(.dark-mode) { background: #191919; }
 .dark-mode .stats-card-loading { color:#636366; }
 .dark-mode .stats-card-subtitle { color:#636366; }
 .dark-mode .stats-mini-bar-label { color:#636366; }
-.dark-mode .stats-history-entry { border-color:#2a2a2c; }
-.dark-mode .stats-history-date { color:#f5f5f7; }
-.dark-mode .stats-history-summary { color:#8e8e93; }
-.dark-mode .stats-history-empty { color:#636366; }
-.dark-mode .stats-history-more { border-color:#2a2a2c; color:#8e8e93; }
-.dark-mode .stats-history-more:hover { background:#2a2a2c; }
-.dark-mode .stats-recommend-empty { color:#636366; }
 
-/* Similarity Groups */
-.sim-group-controls {
-  display:flex; gap:8px; margin-bottom:12px;
-}
-.sim-group-add-btn {
-  padding:6px 14px; border:1px dashed #d1d5db; border-radius:8px;
-  background:none; cursor:pointer; font-size:0.8rem; color:#6b7280;
-}
-.sim-group-add-btn:hover { border-color:#9ca3af; background:#f9fafb; }
-.sim-group-empty {
-  text-align:center; padding:16px; color:#9ca3af; font-size:0.8rem;
-}
-.sim-group-item {
-  display:flex; align-items:center; gap:8px;
-  padding:10px 12px; margin-bottom:6px;
-  background:#f9fafb; border-radius:8px;
-}
-.sim-group-type-badge {
-  font-size:0.65rem; font-weight:700; text-transform:uppercase;
-  padding:2px 8px; border-radius:4px;
-  letter-spacing:0.03em; flex-shrink:0;
-}
-.sim-group-type-badge.identical {
-  background:#dbeafe; color:#2563eb;
-}
-.sim-group-type-badge.similar {
-  background:#fef3c7; color:#d97706;
-}
-.sim-group-names {
-  flex:1; font-size:0.8rem; color:#1d1d1f;
-}
-.sim-group-link-icon {
-  color:#9ca3af; margin:0 2px;
-}
-.sim-group-delete {
-  background:none; border:none; cursor:pointer;
-  color:#d1d5db; font-size:1.1rem; padding:2px 6px;
-  border-radius:4px; line-height:1;
-}
-.sim-group-delete:hover { color:#ef4444; background:#fef2f2; }
-
-/* Similarity group selection UI */
-.sim-group-select-header {
-  display:flex; justify-content:space-between; align-items:center;
-  margin-bottom:10px;
-}
-.sim-group-select-header span { font-size:0.85rem; color:#1d1d1f; }
-.sim-group-cancel-btn {
-  background:none; border:none; cursor:pointer;
-  color:#6b7280; font-size:0.8rem; padding:4px 8px;
-  border-radius:6px;
-}
-.sim-group-cancel-btn:hover { background:#f3f4f6; }
-.sim-group-card-list {
-  display:flex; flex-direction:column; gap:4px; margin-bottom:10px;
-}
-.sim-group-card-btn {
-  display:flex; align-items:center; gap:8px;
-  padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px;
-  background:#fff; cursor:pointer; font-size:0.8rem;
-  text-align:left; color:#1d1d1f;
-}
-.sim-group-card-btn:hover { border-color:#9ca3af; }
-.sim-group-card-btn.selected {
-  border-color:#3b82f6; background:#eff6ff;
-}
-.sim-group-card-check {
-  width:18px; height:18px; border:2px solid #d1d5db; border-radius:4px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:0.7rem; color:#3b82f6; font-weight:700; flex-shrink:0;
-}
-.sim-group-card-btn.selected .sim-group-card-check {
-  border-color:#3b82f6; background:#3b82f6; color:#fff;
-}
-.sim-group-confirm-btn {
-  width:100%; padding:10px; background:#3b82f6; color:#fff;
-  border:none; border-radius:8px; cursor:pointer;
-  font-size:0.85rem; font-weight:600;
-}
-.sim-group-confirm-btn:hover { background:#2563eb; }
-.sim-group-hint {
-  text-align:center; font-size:0.8rem; color:#9ca3af; padding:8px;
-}
-
-/* Dark mode similarity groups */
-.dark-mode .sim-group-add-btn { border-color:#48484a; color:#8e8e93; }
-.dark-mode .sim-group-add-btn:hover { border-color:#636366; background:#2a2a2c; }
-.dark-mode .sim-group-empty { color:#636366; }
-.dark-mode .sim-group-item { background:#2a2a2c; }
-.dark-mode .sim-group-type-badge.identical { background:#1e3a5f; color:#60a5fa; }
-.dark-mode .sim-group-type-badge.similar { background:#451a03; color:#fbbf24; }
-.dark-mode .sim-group-names { color:#f5f5f7; }
-.dark-mode .sim-group-delete { color:#48484a; }
-.dark-mode .sim-group-delete:hover { color:#ef4444; background:#2a2a2c; }
-.dark-mode .sim-group-select-header span { color:#f5f5f7; }
-.dark-mode .sim-group-cancel-btn { color:#8e8e93; }
-.dark-mode .sim-group-cancel-btn:hover { background:#2a2a2c; }
-.dark-mode .sim-group-card-btn { background:#1c1c1e; border-color:#2a2a2c; color:#f5f5f7; }
-.dark-mode .sim-group-card-btn:hover { border-color:#48484a; }
-.dark-mode .sim-group-card-btn.selected { border-color:#3b82f6; background:#1e3a5f; }
-.dark-mode .sim-group-card-check { border-color:#48484a; }
-.dark-mode .sim-group-hint { color:#636366; }

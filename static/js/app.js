@@ -922,7 +922,7 @@ function toggleSmartPractice(btn) {
     var defaultBtn = document.querySelector('.view-mode-btn[data-mode="song-order"]');
     if (defaultBtn) defaultBtn.classList.add('active');
   }
-  // TODO: reorder exercises based on recommendation algorithm
+
 }
 
 // ===== Progress Summary Bar / Stats Drawer =====

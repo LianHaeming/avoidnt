@@ -1,9 +1,11 @@
 // ===== Stats Drawer =====
 var _statsDrawerOpen = false;
 var _statsWeekOffset = 0;
-var _statsHistoryDays = 7;
 var _statsSongData = null;
 var _statsSectionMap = {};
+var _statsWeekLogs = null;
+var _statsGroupMode = 'song-order';
+var _statsCurrentMonday = null;
 
 // ===== Open / Close =====
 function openStatsDrawer() {
@@ -28,16 +30,29 @@ function openStatsDrawer() {
   renderHealthBar();
   loadWeeklyChart();
   renderHeatMap();
-  renderAdjustedHeatMap();
-  loadPracticeHistory();
-  renderSimilarityGroupsList();
-  loadRecommendations();
+
+  // Close bar detail on outside click
+  var scroll = drawer.querySelector('.stats-drawer-scroll');
+  if (scroll) {
+    scroll.addEventListener('click', _onDrawerScrollClick);
+  }
+}
+
+function _onDrawerScrollClick(e) {
+  // Close bar detail if click is outside chart/detail area
+  if (!e.target.closest('#stats-weekly-chart') && !e.target.closest('#stats-bar-detail')) {
+    hideBarDetail();
+  }
 }
 
 function closeStatsDrawer() {
   var drawer = document.getElementById('stats-drawer');
   var backdrop = document.getElementById('stats-drawer-backdrop');
   if (!drawer) return;
+
+  hideBarDetail();
+  var scroll = drawer.querySelector('.stats-drawer-scroll');
+  if (scroll) scroll.removeEventListener('click', _onDrawerScrollClick);
 
   drawer.classList.remove('open');
   backdrop.classList.remove('open');
@@ -130,6 +145,53 @@ function _sectionColor(sectionId) {
   return '#9ca3af';
 }
 
+// ===== Stats Group Mode Toggle =====
+function setStatsGroupMode(btn, mode) {
+  var container = btn.closest('.drawer-segmented-sm');
+  if (!container) return;
+  container.querySelectorAll('.seg-btn-sm').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  _statsGroupMode = mode;
+
+  // Re-render all sections
+  renderHealthBar();
+  if (_statsWeekLogs !== null && _statsCurrentMonday) {
+    renderWeeklyChart(_statsWeekLogs, _statsCurrentMonday);
+  }
+  renderHeatMap();
+}
+
+function _buildMergedTypeMap() {
+  if (!_statsSongData || !_statsSongData.structure) return { typeOrder: [], typeToSectionIds: {} };
+  var sorted = _statsSongData.structure.slice().sort(function(a,b) { return a.order - b.order; });
+  var typeToSectionIds = {};
+  var typeOrder = [];
+  sorted.forEach(function(s) {
+    if (!typeToSectionIds[s.type]) {
+      typeToSectionIds[s.type] = [];
+      typeOrder.push(s.type);
+    }
+    typeToSectionIds[s.type].push(s.id);
+  });
+  return { typeOrder: typeOrder, typeToSectionIds: typeToSectionIds };
+}
+
+function _mergedSectionColor(type) {
+  var merged = _buildMergedTypeMap();
+  var idx = merged.typeOrder.indexOf(type);
+  return idx >= 0 ? _sectionColors[idx % _sectionColors.length] : '#9ca3af';
+}
+
+function _findExerciseSectionType(exerciseId) {
+  var ex = _findExercise(exerciseId);
+  if (!ex) return '__unknown__';
+  var sectionId = ex.sectionId || '__none__';
+  var info = _statsSectionMap[sectionId];
+  return info ? info.type : '__unknown__';
+}
+
 // ===== Section 1: Song Health Bar =====
 function renderHealthBar() {
   var drawer = document.getElementById('stats-drawer');
@@ -138,21 +200,9 @@ function renderHealthBar() {
   var stageCounts = JSON.parse(drawer.dataset.stageCounts || '[]');
   var exerciseCount = parseInt(drawer.dataset.exerciseCount) || 0;
   var totalTime = parseInt(drawer.dataset.totalTime) || 0;
+  var stageNames = JSON.parse(drawer.dataset.stageNames || '[]');
 
-  // Health bar
-  var bar = document.getElementById('stats-health-bar');
-  bar.innerHTML = '';
-  for (var i = 0; i < 5; i++) {
-    if (stageCounts[i] > 0) {
-      var seg = document.createElement('div');
-      seg.className = 'progress-stage-segment';
-      seg.style.flex = stageCounts[i];
-      seg.style.background = _stageColors[i];
-      bar.appendChild(seg);
-    }
-  }
-
-  // Percentage mastered
+  // Summary (same for both modes)
   var mastered = stageCounts[4] || 0;
   var pctEl = document.getElementById('stats-health-pct');
   var pct = exerciseCount > 0 ? Math.round((mastered / exerciseCount) * 100) : 0;
@@ -161,8 +211,15 @@ function renderHealthBar() {
   var detailEl = document.getElementById('stats-health-detail');
   detailEl.textContent = exerciseCount + ' exercises · ' + _formatDuration(totalTime) + ' total';
 
+  var bar = document.getElementById('stats-health-bar');
+
+  if (_statsGroupMode === 'by-section' && _statsSongData && _statsSongData.structure && _statsSongData.structure.length > 0) {
+    _renderHealthBarBySection(bar, stageNames);
+  } else {
+    _renderHealthBarSongOrder(bar, stageCounts);
+  }
+
   // Legend
-  var stageNames = JSON.parse(drawer.dataset.stageNames || '[]');
   var legend = document.getElementById('stats-health-legend');
   legend.innerHTML = '';
   for (var i = 0; i < 5; i++) {
@@ -174,6 +231,72 @@ function renderHealthBar() {
       legend.appendChild(row);
     }
   }
+}
+
+function _renderHealthBarSongOrder(bar, stageCounts) {
+  bar.innerHTML = '';
+  bar.classList.remove('health-bar-sectioned');
+  for (var i = 0; i < 5; i++) {
+    if (stageCounts[i] > 0) {
+      var seg = document.createElement('div');
+      seg.className = 'progress-stage-segment';
+      seg.style.flex = stageCounts[i];
+      seg.style.background = _stageColors[i];
+      bar.appendChild(seg);
+    }
+  }
+}
+
+function _renderHealthBarBySection(bar, stageNames) {
+  bar.innerHTML = '';
+  bar.classList.add('health-bar-sectioned');
+
+  var merged = _buildMergedTypeMap();
+  var exercises = (_statsSongData.exercises || []).filter(function(ex) { return !ex.isTransition; });
+
+  merged.typeOrder.forEach(function(type) {
+    var sectionIds = merged.typeToSectionIds[type];
+    var typeExercises = exercises.filter(function(ex) {
+      return sectionIds.indexOf(ex.sectionId) !== -1;
+    });
+    if (typeExercises.length === 0) return;
+
+    var label = sectionIds.length > 1 ? _pluralize(type) : _capitalize(type);
+
+    var typeStageCounts = [0,0,0,0,0];
+    typeExercises.forEach(function(ex) {
+      var s = (ex.stage || 1) - 1;
+      if (s >= 0 && s < 5) typeStageCounts[s]++;
+    });
+
+    var row = document.createElement('div');
+    row.className = 'health-bar-type-row';
+
+    var labelEl = document.createElement('span');
+    labelEl.className = 'health-bar-type-label';
+    labelEl.textContent = label;
+    row.appendChild(labelEl);
+
+    var miniBar = document.createElement('div');
+    miniBar.className = 'progress-stage-bar health-bar-type-bar';
+    for (var i = 0; i < 5; i++) {
+      if (typeStageCounts[i] > 0) {
+        var seg = document.createElement('div');
+        seg.className = 'progress-stage-segment';
+        seg.style.flex = typeStageCounts[i];
+        seg.style.background = _stageColors[i];
+        miniBar.appendChild(seg);
+      }
+    }
+    row.appendChild(miniBar);
+
+    var countEl = document.createElement('span');
+    countEl.className = 'health-bar-type-count';
+    countEl.textContent = typeExercises.length;
+    row.appendChild(countEl);
+
+    bar.appendChild(row);
+  });
 }
 
 // ===== Section 2: Weekly Practice Chart =====
@@ -225,11 +348,16 @@ function renderWeeklyChart(logs, monday) {
   var emptyEl = document.getElementById('stats-weekly-empty');
   var chartEl = document.getElementById('stats-weekly-chart');
 
-  // Build day map: { "2025-02-20": { sectionId: seconds, ... }, ... }
+  _statsWeekLogs = logs;
+  _statsCurrentMonday = monday;
+  hideBarDetail();
+
+  // Build day map: { "2025-02-20": { groupKey: seconds, ... }, ... }
   var dayMap = {};
   var totalWeekSeconds = 0;
   var daysWithPractice = 0;
   var dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var isBySection = _statsGroupMode === 'by-section';
 
   for (var i = 0; i < 7; i++) {
     var d = new Date(monday);
@@ -242,9 +370,8 @@ function renderWeeklyChart(logs, monday) {
     logs.forEach(function(log) {
       if (dayMap[log.date] !== undefined) {
         log.entries.forEach(function(entry) {
-          // Find the section for this exercise
-          var sectionId = _findExerciseSection(entry.exerciseId);
-          dayMap[log.date][sectionId] = (dayMap[log.date][sectionId] || 0) + entry.seconds;
+          var groupKey = isBySection ? _findExerciseSectionType(entry.exerciseId) : _findExerciseSection(entry.exerciseId);
+          dayMap[log.date][groupKey] = (dayMap[log.date][groupKey] || 0) + entry.seconds;
         });
       }
     });
@@ -301,12 +428,12 @@ function renderWeeklyChart(logs, monday) {
     // Build stacked segments
     var sortedSections = Object.entries(sections).sort(function(a,b) { return b[1] - a[1]; });
     sortedSections.forEach(function(pair) {
-      var sectionId = pair[0];
+      var key = pair[0];
       var secs = pair[1];
       var seg = document.createElement('div');
       seg.className = 'stats-bar-segment';
       seg.style.height = (dayTotal > 0 ? (secs / dayTotal) * 100 : 0) + '%';
-      seg.style.background = _sectionColor(sectionId);
+      seg.style.background = isBySection ? _mergedSectionColor(key) : _sectionColor(key);
       bar.appendChild(seg);
     });
 
@@ -324,6 +451,16 @@ function renderWeeklyChart(logs, monday) {
     }
 
     barWrapper.appendChild(bar);
+
+    if (dayTotal > 0) {
+      barWrapper.style.cursor = 'pointer';
+      barWrapper.dataset.date = date;
+      barWrapper.onclick = function(e) {
+        e.stopPropagation();
+        toggleBarDetail(this.dataset.date);
+      };
+    }
+
     barsContainer.appendChild(barWrapper);
 
     var dayLabel = document.createElement('span');
@@ -331,6 +468,44 @@ function renderWeeklyChart(logs, monday) {
     dayLabel.textContent = dayNames[idx];
     labelsContainer.appendChild(dayLabel);
   });
+
+  // Section color legend
+  renderChartLegend(chartEl);
+}
+
+function renderChartLegend(chartEl) {
+  var existing = chartEl.querySelector('.stats-chart-legend');
+  if (existing) existing.remove();
+
+  if (!_statsSongData || !_statsSongData.structure || _statsSongData.structure.length === 0) return;
+
+  var legend = document.createElement('div');
+  legend.className = 'stats-chart-legend';
+
+  if (_statsGroupMode === 'by-section') {
+    var merged = _buildMergedTypeMap();
+    merged.typeOrder.forEach(function(type) {
+      var sectionIds = merged.typeToSectionIds[type];
+      var label = sectionIds.length > 1 ? _pluralize(type) : _capitalize(type);
+      var color = _mergedSectionColor(type);
+      var item = document.createElement('span');
+      item.className = 'stats-chart-legend-item';
+      item.innerHTML = '<span class="stats-chart-legend-dot" style="background:' + color + '"></span>' + label;
+      legend.appendChild(item);
+    });
+  } else {
+    var sorted = _statsSongData.structure.slice().sort(function(a,b) { return a.order - b.order; });
+    sorted.forEach(function(section) {
+      var label = _statsSectionMap[section.id] ? _statsSectionMap[section.id].label : section.type;
+      var color = _sectionColor(section.id);
+      var item = document.createElement('span');
+      item.className = 'stats-chart-legend-item';
+      item.innerHTML = '<span class="stats-chart-legend-dot" style="background:' + color + '"></span>' + label;
+      legend.appendChild(item);
+    });
+  }
+
+  chartEl.appendChild(legend);
 }
 
 function _findExerciseSection(exerciseId) {
@@ -347,6 +522,109 @@ function statsWeekNav(delta) {
   _statsWeekOffset -= delta; // going back = +1 offset
   if (_statsWeekOffset < 0) _statsWeekOffset = 0;
   loadWeeklyChart();
+}
+
+function toggleBarDetail(date) {
+  var existing = document.getElementById('stats-bar-detail');
+  if (existing && existing.dataset.date === date) {
+    hideBarDetail();
+    return;
+  }
+  showBarDetail(date);
+}
+
+function showBarDetail(date) {
+  hideBarDetail();
+
+  // Find log for this date
+  var log = null;
+  if (_statsWeekLogs) {
+    for (var i = 0; i < _statsWeekLogs.length; i++) {
+      if (_statsWeekLogs[i].date === date) { log = _statsWeekLogs[i]; break; }
+    }
+  }
+  if (!log || !log.entries || log.entries.length === 0) return;
+
+  // Mark active bar
+  document.querySelectorAll('.stats-bar-wrapper').forEach(function(w) {
+    w.classList.toggle('active', w.dataset.date === date);
+  });
+
+  // Create detail container
+  var detail = document.createElement('div');
+  detail.id = 'stats-bar-detail';
+  detail.className = 'stats-bar-detail';
+  detail.dataset.date = date;
+  detail.onclick = function(e) { e.stopPropagation(); };
+
+  // Date header
+  var d = new Date(date + 'T12:00:00');
+  var dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+  var totalSeconds = 0;
+  var totalReps = 0;
+  var entries = [];
+  log.entries.forEach(function(e) {
+    if (e.seconds <= 0 && e.reps <= 0) return;
+    totalSeconds += e.seconds;
+    totalReps += e.reps;
+    entries.push(e);
+  });
+
+  var header = document.createElement('div');
+  header.className = 'stats-bar-detail-header';
+  header.innerHTML = '<span class="stats-bar-detail-date">' + dateStr + '</span>' +
+    '<span class="stats-bar-detail-total">' + _formatDuration(totalSeconds) +
+    (totalReps > 0 ? ' · ' + totalReps + ' reps' : '') + '</span>';
+  detail.appendChild(header);
+
+  // Exercise pills
+  var pills = document.createElement('div');
+  pills.className = 'stats-bar-detail-pills';
+
+  entries.forEach(function(e) {
+    var ex = _findExercise(e.exerciseId);
+    if (!ex) return;
+
+    var pill = document.createElement('span');
+    pill.className = 'stats-bar-detail-pill';
+    pill.style.background = _stageColor(ex.stage);
+    pill.style.color = (ex.stage >= 3) ? '#1a1a1a' : '#fff';
+
+    var label = ex.name || 'Exercise';
+    label += ': ' + _formatDuration(e.seconds);
+    if (e.reps > 0) label += ' · ' + e.reps + ' reps';
+    pill.textContent = label;
+
+    pills.appendChild(pill);
+  });
+
+  detail.appendChild(pills);
+
+  // Insert after the chart element and animate open
+  var chart = document.getElementById('stats-weekly-chart');
+  chart.parentNode.insertBefore(detail, chart.nextSibling);
+
+  // Slide down: set height after insert to trigger transition
+  detail.style.maxHeight = '0';
+  detail.style.overflow = 'hidden';
+  detail.offsetHeight; // force reflow
+  detail.style.maxHeight = detail.scrollHeight + 'px';
+  // Clean up after animation
+  setTimeout(function() {
+    if (detail.parentNode) {
+      detail.style.maxHeight = 'none';
+      detail.style.overflow = '';
+    }
+  }, 300);
+}
+
+function hideBarDetail() {
+  var existing = document.getElementById('stats-bar-detail');
+  if (existing) existing.remove();
+  document.querySelectorAll('.stats-bar-wrapper.active').forEach(function(w) {
+    w.classList.remove('active');
+  });
 }
 
 // ===== Section 3: Song Heat Map =====
@@ -386,7 +664,6 @@ function renderHeatMap() {
     row.className = 'stats-heatmap-row';
     regularExercises.forEach(function(ex, idx) {
       row.appendChild(_createHeatmapCell(ex));
-      // Add transition divider between adjacent exercises
       if (idx < regularExercises.length - 1) {
         var nextEx = regularExercises[idx + 1];
         row.appendChild(_createTransitionDivider(ex, nextEx, transitionMap));
@@ -396,13 +673,14 @@ function renderHeatMap() {
     return;
   }
 
-  // Collect all exercises in song order across sections
-  var allOrdered = [];
-  structure.forEach(function(section) {
-    var sectionExs = regularExercises.filter(function(ex) { return ex.sectionId === section.id; });
-    sectionExs.forEach(function(ex) { allOrdered.push(ex); });
-  });
+  if (_statsGroupMode === 'by-section') {
+    _renderHeatMapBySection(container, structure, regularExercises, transitionMap);
+  } else {
+    _renderHeatMapSongOrder(container, structure, regularExercises, transitionMap);
+  }
+}
 
+function _renderHeatMapSongOrder(container, structure, regularExercises, transitionMap) {
   structure.forEach(function(section) {
     var sectionExercises = regularExercises.filter(function(ex) { return ex.sectionId === section.id; });
     if (sectionExercises.length === 0) return;
@@ -422,11 +700,43 @@ function renderHeatMap() {
     row.className = 'stats-heatmap-row';
     sectionExercises.forEach(function(ex, idx) {
       row.appendChild(_createHeatmapCell(ex));
-      // Add transition between exercises within the same section
       if (idx < sectionExercises.length - 1) {
         var nextEx = sectionExercises[idx + 1];
         row.appendChild(_createTransitionDivider(ex, nextEx, transitionMap));
       }
+    });
+    sectionDiv.appendChild(row);
+    container.appendChild(sectionDiv);
+  });
+}
+
+function _renderHeatMapBySection(container, structure, regularExercises, transitionMap) {
+  var merged = _buildMergedTypeMap();
+
+  merged.typeOrder.forEach(function(type) {
+    var sectionIds = merged.typeToSectionIds[type];
+    var typeExercises = [];
+    sectionIds.forEach(function(sid) {
+      regularExercises.forEach(function(ex) {
+        if (ex.sectionId === sid) typeExercises.push(ex);
+      });
+    });
+    if (typeExercises.length === 0) return;
+
+    var label = sectionIds.length > 1 ? _pluralize(type) : _capitalize(type);
+
+    var sectionDiv = document.createElement('div');
+    sectionDiv.className = 'stats-heatmap-section';
+
+    var labelEl = document.createElement('div');
+    labelEl.className = 'stats-heatmap-label';
+    labelEl.textContent = label;
+    sectionDiv.appendChild(labelEl);
+
+    var row = document.createElement('div');
+    row.className = 'stats-heatmap-row';
+    typeExercises.forEach(function(ex) {
+      row.appendChild(_createHeatmapCell(ex));
     });
     sectionDiv.appendChild(row);
     container.appendChild(sectionDiv);
@@ -497,170 +807,6 @@ function _getStageLabel(stage) {
   if (!drawer) return 'Stage ' + stage;
   var names = JSON.parse(drawer.dataset.stageNames || '[]');
   return names[stage - 1] || ('Stage ' + stage);
-}
-
-// ===== Section 3b: Adjusted Heat Map =====
-function renderAdjustedHeatMap() {
-  var section = document.getElementById('stats-heatmap-adjusted-section');
-  var container = document.getElementById('stats-heatmap-adjusted');
-  if (!section || !container || !_statsSongData) return;
-
-  var groups = _statsSongData.similarityGroups || [];
-  if (groups.length === 0) {
-    section.style.display = 'none';
-    return;
-  }
-  section.style.display = 'block';
-
-  // Compute effective time and adjusted data per exercise
-  var adjustedExercises = _computeAdjustedExercises();
-
-  container.innerHTML = '';
-  var exercises = adjustedExercises;
-  if (exercises.length === 0) {
-    container.innerHTML = '<div class="stats-heatmap-empty">No exercises yet</div>';
-    return;
-  }
-
-  var structure = (_statsSongData.structure || []).slice().sort(function(a,b) { return a.order - b.order; });
-
-  if (structure.length === 0) {
-    var row = document.createElement('div');
-    row.className = 'stats-heatmap-row';
-    exercises.forEach(function(ex) {
-      row.appendChild(_createAdjustedHeatmapCell(ex));
-    });
-    container.appendChild(row);
-    return;
-  }
-
-  structure.forEach(function(sec) {
-    var sectionExercises = exercises.filter(function(ex) { return ex.sectionId === sec.id; });
-    if (sectionExercises.length === 0) return;
-
-    var sectionInfo = _statsSectionMap[sec.id];
-    var label = sectionInfo ? sectionInfo.label : sec.type;
-
-    var sectionDiv = document.createElement('div');
-    sectionDiv.className = 'stats-heatmap-section';
-
-    var labelEl = document.createElement('div');
-    labelEl.className = 'stats-heatmap-label';
-    labelEl.textContent = label;
-    sectionDiv.appendChild(labelEl);
-
-    var row = document.createElement('div');
-    row.className = 'stats-heatmap-row';
-    sectionExercises.forEach(function(ex) {
-      row.appendChild(_createAdjustedHeatmapCell(ex));
-    });
-    sectionDiv.appendChild(row);
-    container.appendChild(sectionDiv);
-  });
-}
-
-function _computeAdjustedExercises() {
-  if (!_statsSongData || !_statsSongData.exercises) return [];
-  var exercises = _statsSongData.exercises;
-  var groups = _statsSongData.similarityGroups || [];
-
-  // Build exercise lookup
-  var exMap = {};
-  exercises.forEach(function(ex) { exMap[ex.id] = ex; });
-
-  return exercises.map(function(ex) {
-    var adjusted = Object.assign({}, ex);
-    adjusted.effectiveTime = ex.totalPracticedSeconds || 0;
-    adjusted.transferredTime = 0;
-
-    // Check if in any similarity group
-    groups.forEach(function(group) {
-      if (group.exerciseIds.indexOf(ex.id) < 0) return;
-
-      if (group.type === 'identical') {
-        // Identical: all share the same stats (already synced server-side)
-        // No visual change needed beyond what's already shown
-      } else if (group.type === 'similar') {
-        // Similar: bidirectional transfer at 0.8 ratio
-        group.exerciseIds.forEach(function(otherId) {
-          if (otherId === ex.id) return;
-          var other = exMap[otherId];
-          if (!other) return;
-          var transfer = Math.round((other.totalPracticedSeconds || 0) * 0.8);
-          adjusted.transferredTime += transfer;
-          adjusted.effectiveTime += transfer;
-        });
-      }
-    });
-
-    return adjusted;
-  });
-}
-
-function _createAdjustedHeatmapCell(exercise) {
-  var cell = document.createElement('div');
-  cell.className = 'stats-heatmap-cell';
-  cell.style.background = _stageColor(exercise.stage);
-  cell.dataset.exerciseId = exercise.id;
-  cell.onclick = function() { showCardDetail(exercise.id); };
-
-  var nameEl = document.createElement('span');
-  nameEl.className = 'stats-heatmap-cell-name';
-  nameEl.textContent = exercise.name || '';
-  cell.appendChild(nameEl);
-
-  // Show transfer indicator if there's transferred time
-  if (exercise.transferredTime > 0) {
-    var transferEl = document.createElement('span');
-    transferEl.className = 'stats-heatmap-transfer';
-    transferEl.textContent = '+' + _formatDuration(exercise.transferredTime);
-    transferEl.title = 'Transferred from similar exercises';
-    cell.appendChild(transferEl);
-    cell.title = (exercise.name || 'Exercise') + ' — ' + _getStageLabel(exercise.stage) +
-      ' — ' + _formatDuration(exercise.totalPracticedSeconds) + ' direct + ' +
-      _formatDuration(exercise.transferredTime) + ' transferred';
-  } else {
-    cell.title = (exercise.name || 'Exercise') + ' — ' + _getStageLabel(exercise.stage);
-  }
-
-  return cell;
-}
-
-// Render similarity groups list in the drawer
-function renderSimilarityGroupsList() {
-  var container = document.getElementById('sim-group-list');
-  if (!container || !_statsSongData) return;
-
-  var groups = _statsSongData.similarityGroups || [];
-  container.innerHTML = '';
-
-  if (groups.length === 0) {
-    container.innerHTML = '<div class="sim-group-empty">No similarity groups yet. Create one to link exercises that share practice transfer.</div>';
-    return;
-  }
-
-  var exercises = _statsSongData.exercises || [];
-  var exMap = {};
-  exercises.forEach(function(ex) { exMap[ex.id] = ex; });
-
-  groups.forEach(function(group) {
-    var div = document.createElement('div');
-    div.className = 'sim-group-item';
-
-    var typeLabel = group.type === 'identical' ? 'Identical' : 'Similar';
-    var typeBadge = '<span class="sim-group-type-badge ' + group.type + '">' + typeLabel + '</span>';
-
-    var names = group.exerciseIds.map(function(id) {
-      var ex = exMap[id];
-      return ex ? (ex.name || 'Exercise') : 'Unknown';
-    });
-
-    div.innerHTML = typeBadge +
-      '<span class="sim-group-names">' + names.join(' <span class="sim-group-link-icon">↔</span> ') + '</span>' +
-      '<button class="sim-group-delete" onclick="deleteSimGroup(\'' + group.id + '\')" title="Remove group">×</button>';
-
-    container.appendChild(div);
-  });
 }
 
 // ===== Section 4: Per-Card Detail =====
@@ -850,104 +996,6 @@ function renderCardDailyChart(container, exerciseId, logs, startDate, endDate) {
   container.appendChild(chart);
 }
 
-// ===== Section 6: Practice History =====
-function loadPracticeHistory() {
-  var container = document.getElementById('stats-history');
-  var moreBtn = document.getElementById('stats-history-more');
-  if (!container) return;
-
-  var songId = document.getElementById('stats-drawer').dataset.songId;
-  var today = new Date();
-  var startDate = new Date(today);
-  startDate.setDate(today.getDate() - (_statsHistoryDays - 1));
-
-  var from = startDate.toISOString().slice(0, 10);
-  var to = today.toISOString().slice(0, 10);
-
-  fetch('/api/songs/' + songId + '/daily-log?from=' + from + '&to=' + to)
-    .then(function(r) { return r.json(); })
-    .then(function(logs) {
-      renderPracticeHistory(container, logs, moreBtn);
-    })
-    .catch(function() {
-      container.innerHTML = '<div class="stats-history-empty">Failed to load practice history</div>';
-    });
-}
-
-function renderPracticeHistory(container, logs, moreBtn) {
-  if (!logs || logs.length === 0) {
-    container.innerHTML = '<div class="stats-history-empty">No practice history yet</div>';
-    if (moreBtn) moreBtn.style.display = 'none';
-    return;
-  }
-
-  container.innerHTML = '';
-
-  // Sort logs by date descending
-  var sorted = logs.slice().sort(function(a,b) { return b.date.localeCompare(a.date); });
-
-  // Filter to days that actually have practice
-  var daysWithData = sorted.filter(function(log) {
-    return log.entries && log.entries.length > 0 && log.entries.some(function(e) { return e.seconds > 0 || e.reps > 0; });
-  });
-
-  if (daysWithData.length === 0) {
-    container.innerHTML = '<div class="stats-history-empty">No practice history yet</div>';
-    if (moreBtn) moreBtn.style.display = 'none';
-    return;
-  }
-
-  daysWithData.forEach(function(log) {
-    var entry = document.createElement('div');
-    entry.className = 'stats-history-entry';
-
-    // Date
-    var dateEl = document.createElement('div');
-    dateEl.className = 'stats-history-date';
-    var d = new Date(log.date + 'T12:00:00');
-    var options = { weekday: 'long', month: 'short', day: 'numeric' };
-    dateEl.textContent = d.toLocaleDateString('en-US', options);
-    entry.appendChild(dateEl);
-
-    // Total time
-    var totalSeconds = 0;
-    var totalReps = 0;
-    log.entries.forEach(function(e) {
-      totalSeconds += e.seconds;
-      totalReps += e.reps;
-    });
-
-    var summaryEl = document.createElement('div');
-    summaryEl.className = 'stats-history-summary';
-    summaryEl.textContent = _formatDuration(totalSeconds) + (totalReps > 0 ? ' · ' + totalReps + ' reps' : '');
-    entry.appendChild(summaryEl);
-
-    // Cards touched as pills
-    var pillsEl = document.createElement('div');
-    pillsEl.className = 'stats-history-pills';
-    log.entries.forEach(function(e) {
-      if (e.seconds <= 0 && e.reps <= 0) return;
-      var ex = _findExercise(e.exerciseId);
-      if (!ex) return;
-
-      var pill = document.createElement('span');
-      pill.className = 'stats-history-pill';
-      pill.style.background = _stageColor(ex.stage);
-      pill.style.color = (ex.stage >= 3) ? '#1a1a1a' : '#fff';
-      pill.textContent = ex.name || 'Exercise';
-      pillsEl.appendChild(pill);
-    });
-    entry.appendChild(pillsEl);
-
-    container.appendChild(entry);
-  });
-
-  // Show more button if we might have more data
-  if (moreBtn) {
-    moreBtn.style.display = daysWithData.length >= 3 ? 'block' : 'none';
-  }
-}
-
 function _findExercise(exerciseId) {
   if (!_statsSongData || !_statsSongData.exercises) return null;
   for (var i = 0; i < _statsSongData.exercises.length; i++) {
@@ -956,90 +1004,4 @@ function _findExercise(exerciseId) {
   return null;
 }
 
-function loadMoreHistory() {
-  _statsHistoryDays += 14;
-  loadPracticeHistory();
-}
 
-// ===== Section 5: Recommendations =====
-function loadRecommendations() {
-  var container = document.getElementById('stats-recommend');
-  if (!container) return;
-
-  var songId = document.getElementById('stats-drawer').dataset.songId;
-
-  fetch('/api/songs/' + songId + '/stats/recommend')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      renderRecommendations(container, data);
-    })
-    .catch(function() {
-      container.innerHTML = '<div class="stats-recommend-empty">Unable to load recommendations</div>';
-    });
-}
-
-function renderRecommendations(container, data) {
-  var recs = data.recommendations || [];
-  var totalMins = data.totalMins || 0;
-
-  if (recs.length === 0) {
-    container.innerHTML = '<div class="stats-recommend-empty">Start practicing to get recommendations</div>';
-    return;
-  }
-
-  container.innerHTML = '';
-
-  // Header
-  var header = document.createElement('div');
-  header.className = 'stats-recommend-header';
-  header.innerHTML = '<strong>Suggested Practice</strong> <span class="stats-recommend-time">~' + totalMins + ' min</span>';
-  container.appendChild(header);
-
-  // Recommendation list
-  var list = document.createElement('ol');
-  list.className = 'stats-recommend-list';
-
-  recs.forEach(function(rec, idx) {
-    var li = document.createElement('li');
-    li.className = 'stats-recommend-item';
-
-    var stageEmoji = '';
-    if (rec.exerciseId === '__runthrough__') {
-      stageEmoji = '🎵';
-    } else {
-      var ex = _findExercise(rec.exerciseId);
-      if (ex) {
-        var stage = ex.stage || 1;
-        if (stage <= 1) stageEmoji = '🔴';
-        else if (stage <= 2) stageEmoji = '🟠';
-        else if (stage <= 3) stageEmoji = '🟡';
-        else if (stage <= 4) stageEmoji = '🟢';
-        else stageEmoji = '✅';
-      }
-    }
-
-    li.innerHTML =
-      '<span class="stats-recommend-emoji">' + stageEmoji + '</span>' +
-      '<div class="stats-recommend-content">' +
-        '<span class="stats-recommend-name">' + rec.name + '</span>' +
-        '<span class="stats-recommend-reason">' + rec.reason + '</span>' +
-      '</div>' +
-      '<span class="stats-recommend-mins">' + rec.suggestedMins + ' min</span>';
-
-    // Highlight the corresponding cell in the heatmap
-    if (rec.exerciseId !== '__runthrough__') {
-      li.style.cursor = 'pointer';
-      li.onclick = function() {
-        showCardDetail(rec.exerciseId);
-        // Also highlight in heatmap
-        document.querySelectorAll('.stats-heatmap-cell').forEach(function(c) {
-          c.classList.toggle('recommended', c.dataset.exerciseId === rec.exerciseId);
-        });
-      };
-    }
-
-    list.appendChild(li);
-  });
-
-  container.appendChild(list);
-}

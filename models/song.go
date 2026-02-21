@@ -23,13 +23,6 @@ type Section struct {
 	Order int    `json:"order"`
 }
 
-// SimilarityGroup links exercises that share practice transfer.
-type SimilarityGroup struct {
-	ID          string   `json:"id"`
-	Type        string   `json:"type"` // "identical" or "similar"
-	ExerciseIDs []string `json:"exerciseIds"`
-}
-
 // Exercise contains one or more crops to practice.
 type Exercise struct {
 	ID                    string   `json:"id"`
@@ -61,8 +54,7 @@ type Song struct {
 	JobID       string     `json:"jobId"`
 	PageCount   int        `json:"pageCount"`
 	Structure   []Section  `json:"structure"`
-	Exercises        []Exercise        `json:"exercises"`
-	SimilarityGroups []SimilarityGroup `json:"similarityGroups,omitempty"`
+	Exercises []Exercise `json:"exercises"`
 	CreatedAt        string            `json:"createdAt"`
 	CropBgColor  *string `json:"cropBgColor,omitempty"`
 	HideTitles   bool    `json:"hideTitles,omitempty"`

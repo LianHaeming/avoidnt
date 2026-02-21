@@ -429,6 +429,12 @@
   </button>
   <div class="stats-drawer-scroll">
     <h2 class="stats-drawer-title">Practice Statistics</h2>
+    <div class="stats-group-toggle">
+      <div class="drawer-segmented-sm">
+        <button class="seg-btn-sm active" onclick="setStatsGroupMode(this,'song-order')">Song order</button>
+        <button class="seg-btn-sm" onclick="setStatsGroupMode(this,'by-section')">By section</button>
+      </div>
+    </div>
 
     <!-- Section 1: Song Health Bar -->
     <section class="stats-section" id="stats-health-bar-section">
@@ -473,44 +479,12 @@
       <div class="stats-heatmap" id="stats-heatmap"></div>
     </section>
 
-    <!-- Section 3b: Song Heat Map (Adjusted) -->
-    <section class="stats-section" id="stats-heatmap-adjusted-section" style="display:none">
-      <h3 class="stats-section-heading">Adjusted Progress <span class="stats-heading-hint">(with similarity transfer)</span></h3>
-      <div class="stats-heatmap" id="stats-heatmap-adjusted"></div>
-    </section>
-
     <!-- Section 4: Per-Card Detail (expandable) -->
     <section class="stats-section" id="stats-card-detail-section" style="display:none">
       <h3 class="stats-section-heading">Card Detail</h3>
       <div class="stats-card-detail" id="stats-card-detail"></div>
     </section>
 
-    <!-- Section 4b: Similarity Groups Manager -->
-    <section class="stats-section" id="stats-similarity-section">
-      <h3 class="stats-section-heading">Similarity Groups</h3>
-      <div class="sim-group-controls">
-        <button class="sim-group-add-btn" onclick="startSimGroupSelect('identical')">+ Identical Group</button>
-        <button class="sim-group-add-btn" onclick="startSimGroupSelect('similar')">+ Similar Group</button>
-      </div>
-      <div id="sim-group-list"></div>
-    </section>
-
-    <!-- Section 5: Practice Recommendation -->
-    <section class="stats-section" id="stats-recommend-section">
-      <h3 class="stats-section-heading">What to Practice Next</h3>
-      <div class="stats-recommend" id="stats-recommend">
-        <div class="stats-recommend-empty">Start practicing to get recommendations</div>
-      </div>
-    </section>
-
-    <!-- Section 6: Practice History -->
-    <section class="stats-section" id="stats-history-section">
-      <h3 class="stats-section-heading">Practice History</h3>
-      <div class="stats-history" id="stats-history">
-        <div class="stats-history-empty">Your practice history will appear here after you practice</div>
-      </div>
-      <button class="stats-history-more" id="stats-history-more" style="display:none" onclick="loadMoreHistory()">Show more</button>
-    </section>
   </div>
 </div>
 {{end}}
