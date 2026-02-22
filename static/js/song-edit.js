@@ -119,6 +119,9 @@
     editing = true;
     isDirty = false;
 
+    // Close stats panel if open
+    if (typeof closeStatsDrawer === 'function') closeStatsDrawer();
+
     const root = document.getElementById('exercise-view');
     if (root) root.classList.add('edit-mode');
 

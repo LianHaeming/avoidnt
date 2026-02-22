@@ -299,6 +299,86 @@
           </button>
         </div>
       </div>
+
+      <!-- Stats Panel (inline slide-down) -->
+      {{if gt .ExerciseCount 0}}
+      <div class="stats-panel-slide" id="stats-drawer"
+           data-song-id="{{.Song.ID}}"
+           data-stage-names="{{json .Settings.StageNames}}"
+           data-stage-counts="{{json .StageCounts}}"
+           data-exercise-count="{{.ExerciseCount}}"
+           data-total-time="{{.TotalPracticeTime}}"
+           data-total-reps="{{.TotalReps}}"
+           data-song-json="{{json .Song}}">
+        <div class="stats-panel-slide-inner">
+          <div class="stats-panel-slide-header">
+            <h2 class="stats-drawer-title">Practice Statistics</h2>
+            <button class="stats-panel-slide-close" onclick="closeStatsDrawer()" title="Close">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="stats-group-toggle">
+            <div class="drawer-segmented-sm">
+              <button class="seg-btn-sm active" onclick="setStatsGroupMode(this,'song-order')">Song order</button>
+              <button class="seg-btn-sm" onclick="setStatsGroupMode(this,'by-section')">By section</button>
+            </div>
+          </div>
+
+          <!-- Section 1: Song Health Bar -->
+          <section class="stats-section" id="stats-health-bar-section">
+            <h3 class="stats-section-heading">Song Health</h3>
+            <div class="stats-health-summary">
+              <span class="stats-health-pct" id="stats-health-pct"></span>
+              <span class="stats-health-detail" id="stats-health-detail"></span>
+            </div>
+            <div class="progress-stage-bar stats-health-bar" id="stats-health-bar"></div>
+            <div class="stats-health-legend" id="stats-health-legend"></div>
+          </section>
+
+          <!-- Section 2: Weekly Practice Chart -->
+          <section class="stats-section" id="stats-weekly-section">
+            <h3 class="stats-section-heading">Weekly Practice</h3>
+            <div class="stats-weekly-summary" id="stats-weekly-summary">
+              <span class="stats-weekly-stat" id="stats-weekly-total">—</span>
+              <span class="stats-weekly-stat" id="stats-weekly-avg">—</span>
+              <span class="stats-weekly-stat" id="stats-weekly-streak">—</span>
+            </div>
+            <div class="stats-weekly-nav">
+              <button class="stats-week-nav-btn" id="stats-week-prev" onclick="statsWeekNav(-1)" title="Previous week">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <span class="stats-week-label" id="stats-week-label">This week</span>
+              <button class="stats-week-nav-btn" id="stats-week-next" onclick="statsWeekNav(1)" title="Next week">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+            <div class="stats-weekly-chart" id="stats-weekly-chart">
+              <div class="stats-weekly-bars" id="stats-weekly-bars"></div>
+              <div class="stats-weekly-labels" id="stats-weekly-labels"></div>
+            </div>
+            <div class="stats-weekly-empty" id="stats-weekly-empty" style="display:none">
+              No practice logged this week
+            </div>
+          </section>
+
+          <!-- Bar detail (inserted dynamically) -->
+          <div id="stats-bar-detail-anchor"></div>
+
+          <!-- Section 3: Song Heat Map -->
+          <section class="stats-section" id="stats-heatmap-section">
+            <h3 class="stats-section-heading">Your Progress</h3>
+            <div class="stats-heatmap" id="stats-heatmap"></div>
+          </section>
+
+          <!-- Section 4: Per-Card Detail -->
+          <section class="stats-section" id="stats-card-detail-section" style="display:none">
+            <h3 class="stats-section-heading">Card Detail</h3>
+            <div class="stats-card-detail" id="stats-card-detail"></div>
+          </section>
+        </div>
+      </div>
+      {{end}}
+
     </header>
 
     <!-- Exercise Cards -->
@@ -409,85 +489,6 @@
     <div id="practice-backdrop" class="practice-backdrop" style="display:none" onclick="closePractice()"></div>
   </div>
 </div>
-
-<!-- Stats Drawer Overlay -->
-{{if gt .ExerciseCount 0}}
-<div class="stats-drawer-backdrop" id="stats-drawer-backdrop" style="display:none" onclick="closeStatsDrawer()"></div>
-<div class="stats-drawer" id="stats-drawer" style="display:none"
-     data-song-id="{{.Song.ID}}"
-     data-stage-names="{{json .Settings.StageNames}}"
-     data-stage-counts="{{json .StageCounts}}"
-     data-exercise-count="{{.ExerciseCount}}"
-     data-total-time="{{.TotalPracticeTime}}"
-     data-total-reps="{{.TotalReps}}"
-     data-song-json="{{json .Song}}">
-  <div class="stats-drawer-handle" onclick="closeStatsDrawer()">
-    <div class="stats-drawer-handle-bar"></div>
-  </div>
-  <button class="stats-drawer-close" onclick="closeStatsDrawer()" title="Close">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </button>
-  <div class="stats-drawer-scroll">
-    <h2 class="stats-drawer-title">Practice Statistics</h2>
-    <div class="stats-group-toggle">
-      <div class="drawer-segmented-sm">
-        <button class="seg-btn-sm active" onclick="setStatsGroupMode(this,'song-order')">Song order</button>
-        <button class="seg-btn-sm" onclick="setStatsGroupMode(this,'by-section')">By section</button>
-      </div>
-    </div>
-
-    <!-- Section 1: Song Health Bar -->
-    <section class="stats-section" id="stats-health-bar-section">
-      <h3 class="stats-section-heading">Song Health</h3>
-      <div class="stats-health-summary">
-        <span class="stats-health-pct" id="stats-health-pct"></span>
-        <span class="stats-health-detail" id="stats-health-detail"></span>
-      </div>
-      <div class="progress-stage-bar stats-health-bar" id="stats-health-bar"></div>
-      <div class="stats-health-legend" id="stats-health-legend"></div>
-    </section>
-
-    <!-- Section 2: Weekly Practice Chart -->
-    <section class="stats-section" id="stats-weekly-section">
-      <h3 class="stats-section-heading">Weekly Practice</h3>
-      <div class="stats-weekly-summary" id="stats-weekly-summary">
-        <span class="stats-weekly-stat" id="stats-weekly-total">—</span>
-        <span class="stats-weekly-stat" id="stats-weekly-avg">—</span>
-        <span class="stats-weekly-stat" id="stats-weekly-streak">—</span>
-      </div>
-      <div class="stats-weekly-nav">
-        <button class="stats-week-nav-btn" id="stats-week-prev" onclick="statsWeekNav(-1)" title="Previous week">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <span class="stats-week-label" id="stats-week-label">This week</span>
-        <button class="stats-week-nav-btn" id="stats-week-next" onclick="statsWeekNav(1)" title="Next week">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-      </div>
-      <div class="stats-weekly-chart" id="stats-weekly-chart">
-        <div class="stats-weekly-bars" id="stats-weekly-bars"></div>
-        <div class="stats-weekly-labels" id="stats-weekly-labels"></div>
-      </div>
-      <div class="stats-weekly-empty" id="stats-weekly-empty" style="display:none">
-        No practice logged this week
-      </div>
-    </section>
-
-    <!-- Section 3: Song Heat Map (Raw) -->
-    <section class="stats-section" id="stats-heatmap-section">
-      <h3 class="stats-section-heading">Your Progress</h3>
-      <div class="stats-heatmap" id="stats-heatmap"></div>
-    </section>
-
-    <!-- Section 4: Per-Card Detail (expandable) -->
-    <section class="stats-section" id="stats-card-detail-section" style="display:none">
-      <h3 class="stats-section-heading">Card Detail</h3>
-      <div class="stats-card-detail" id="stats-card-detail"></div>
-    </section>
-
-  </div>
-</div>
-{{end}}
 
 <!-- Confirm Modal -->
 <div class="confirm-modal-backdrop" id="confirm-modal-backdrop" style="display:none">

@@ -10,21 +10,19 @@ var _statsCurrentMonday = null;
 // ===== Open / Close =====
 function openStatsDrawer() {
   var drawer = document.getElementById('stats-drawer');
-  var backdrop = document.getElementById('stats-drawer-backdrop');
   if (!drawer) return;
 
   // Parse song data
   _statsSongData = JSON.parse(drawer.dataset.songJson || '{}');
   _buildSectionMap();
 
-  drawer.style.display = 'flex';
-  backdrop.style.display = 'block';
-  // Force reflow then add class for animation
-  drawer.offsetHeight;
+  // Slide open
   drawer.classList.add('open');
-  backdrop.classList.add('open');
   _statsDrawerOpen = true;
-  document.body.style.overflow = 'hidden';
+
+  // Highlight stats button
+  var btn = document.getElementById('stats-toggle-btn');
+  if (btn) btn.classList.add('active');
 
   // Render all sections
   renderHealthBar();
@@ -32,10 +30,7 @@ function openStatsDrawer() {
   renderHeatMap();
 
   // Close bar detail on outside click
-  var scroll = drawer.querySelector('.stats-drawer-scroll');
-  if (scroll) {
-    scroll.addEventListener('click', _onDrawerScrollClick);
-  }
+  drawer.addEventListener('click', _onDrawerScrollClick);
 }
 
 function _onDrawerScrollClick(e) {
@@ -47,22 +42,17 @@ function _onDrawerScrollClick(e) {
 
 function closeStatsDrawer() {
   var drawer = document.getElementById('stats-drawer');
-  var backdrop = document.getElementById('stats-drawer-backdrop');
   if (!drawer) return;
 
   hideBarDetail();
-  var scroll = drawer.querySelector('.stats-drawer-scroll');
-  if (scroll) scroll.removeEventListener('click', _onDrawerScrollClick);
+  drawer.removeEventListener('click', _onDrawerScrollClick);
 
   drawer.classList.remove('open');
-  backdrop.classList.remove('open');
   _statsDrawerOpen = false;
-  document.body.style.overflow = '';
 
-  setTimeout(function() {
-    drawer.style.display = 'none';
-    backdrop.style.display = 'none';
-  }, 300);
+  // Un-highlight stats button
+  var btn = document.getElementById('stats-toggle-btn');
+  if (btn) btn.classList.remove('active');
 }
 
 // Override the existing toggleStats to open the drawer instead
