@@ -996,3 +996,78 @@ function setTimeSig(btn, sig) {
     dotsContainer.appendChild(dot);
   }
 }
+
+/* ===== PDF Viewer Overlay ===== */
+var _pdfViewerZoom = 1;
+
+function openPdfViewer(jobId, pageCount) {
+  var overlay = document.getElementById('pdf-viewer-overlay');
+  var pagesEl = document.getElementById('pdf-viewer-pages');
+  if (!overlay || !pagesEl) return;
+
+  // Reset zoom
+  _pdfViewerZoom = 1;
+  _updatePdfViewerZoom();
+
+  // Clear previous pages
+  pagesEl.innerHTML = '';
+
+  // Load all page images
+  for (var i = 1; i <= pageCount; i++) {
+    var wrapper = document.createElement('div');
+    wrapper.className = 'pdf-viewer-page-wrapper';
+
+    var img = document.createElement('img');
+    img.src = '/api/pages/' + jobId + '/' + i;
+    img.alt = 'Page ' + i;
+    img.loading = i <= 2 ? 'eager' : 'lazy';
+    img.draggable = false;
+
+    var pageNum = document.createElement('span');
+    pageNum.className = 'pdf-viewer-page-num';
+    pageNum.textContent = i + ' / ' + pageCount;
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(pageNum);
+    pagesEl.appendChild(wrapper);
+  }
+
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Listen for Escape key
+  document.addEventListener('keydown', _pdfViewerKeyHandler);
+}
+
+function closePdfViewer() {
+  var overlay = document.getElementById('pdf-viewer-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', _pdfViewerKeyHandler);
+}
+
+function pdfViewerZoom(delta) {
+  _pdfViewerZoom = Math.max(0.25, Math.min(4, _pdfViewerZoom + delta));
+  _updatePdfViewerZoom();
+}
+
+function _updatePdfViewerZoom() {
+  var label = document.getElementById('pdf-viewer-zoom-label');
+  var pagesEl = document.getElementById('pdf-viewer-pages');
+  if (label) label.textContent = Math.round(_pdfViewerZoom * 100) + '%';
+  if (pagesEl) {
+    var wrappers = pagesEl.querySelectorAll('.pdf-viewer-page-wrapper');
+    // Set max-width based on zoom (base max-width ~900px)
+    var maxW = Math.round(900 * _pdfViewerZoom);
+    for (var i = 0; i < wrappers.length; i++) {
+      wrappers[i].style.maxWidth = maxW + 'px';
+      wrappers[i].style.width = '100%';
+    }
+  }
+}
+
+function _pdfViewerKeyHandler(e) {
+  if (e.key === 'Escape') {
+    closePdfViewer();
+  }
+}

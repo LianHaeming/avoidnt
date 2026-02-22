@@ -999,6 +999,84 @@ body:has(.dark-mode) { background: #191919; }
 .dark-mode .pdf-link { color:#86868b; }
 .dark-mode .pdf-link:hover { color:#d2d2d7; }
 
+/* ===== PDF Viewer Overlay ===== */
+.pdf-viewer-overlay {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  z-index:9999; background:#f5f5f7;
+  display:flex; flex-direction:column;
+  animation: pdfViewerFadeIn 0.2s ease;
+}
+@keyframes pdfViewerFadeIn {
+  from { opacity:0; }
+  to { opacity:1; }
+}
+.pdf-viewer-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0.6rem 1rem;
+  background:#fff; border-bottom:1px solid #e5e7eb;
+  flex-shrink:0;
+}
+.pdf-viewer-title {
+  font-size:0.95rem; font-weight:600; color:#1d1d1f;
+}
+.pdf-viewer-controls {
+  display:flex; align-items:center; gap:0.4rem;
+}
+.pdf-viewer-zoom-btn {
+  background:none; border:1px solid #e5e7eb; border-radius:6px;
+  padding:0.35rem; cursor:pointer; color:#6b7280;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.15s, color 0.15s;
+}
+.pdf-viewer-zoom-btn:hover { background:#f3f4f6; color:#374151; }
+.pdf-viewer-zoom-label {
+  font-size:0.8rem; font-weight:500; color:#6b7280;
+  min-width:3rem; text-align:center;
+}
+.pdf-viewer-close-btn {
+  background:none; border:none; cursor:pointer; color:#6b7280;
+  display:flex; align-items:center; justify-content:center;
+  padding:0.35rem; border-radius:6px; margin-left:0.5rem;
+  transition:background 0.15s, color 0.15s;
+}
+.pdf-viewer-close-btn:hover { background:#fee2e2; color:#dc2626; }
+.pdf-viewer-scroll {
+  flex:1; overflow-y:auto; overflow-x:auto;
+  padding:1.5rem 1rem;
+  -webkit-overflow-scrolling:touch;
+}
+.pdf-viewer-pages {
+  display:flex; flex-direction:column; align-items:center;
+  gap:1rem; max-width:100%;
+}
+.pdf-viewer-page-wrapper {
+  background:#fff; border-radius:4px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+  line-height:0; position:relative;
+  transition: transform 0.2s ease;
+}
+.pdf-viewer-page-wrapper img {
+  display:block; width:100%; height:auto; border-radius:4px;
+}
+.pdf-viewer-page-num {
+  position:absolute; bottom:0.5rem; right:0.6rem;
+  background:rgba(0,0,0,0.5); color:#fff;
+  font-size:0.7rem; font-weight:500;
+  padding:0.15rem 0.5rem; border-radius:10px;
+  pointer-events:none;
+}
+
+/* Dark mode */
+.dark-mode .pdf-viewer-overlay { background:#111113; }
+.dark-mode .pdf-viewer-header { background:#1c1c1e; border-bottom-color:#2a2a2c; }
+.dark-mode .pdf-viewer-title { color:#f5f5f7; }
+.dark-mode .pdf-viewer-zoom-btn { border-color:#3a3a3c; color:#86868b; }
+.dark-mode .pdf-viewer-zoom-btn:hover { background:#2a2a2c; color:#d2d2d7; }
+.dark-mode .pdf-viewer-zoom-label { color:#86868b; }
+.dark-mode .pdf-viewer-close-btn { color:#86868b; }
+.dark-mode .pdf-viewer-close-btn:hover { background:#3a1111; color:#ff453a; }
+.dark-mode .pdf-viewer-page-wrapper { background:#1c1c1e; box-shadow:0 1px 4px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.04); }
+
 /* ===== Progress Summary Bar ===== */
 .progress-summary-bar {
   display:flex; align-items:center; gap:0.75rem;
