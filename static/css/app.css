@@ -2027,7 +2027,7 @@ body:has(.dark-mode) { background: #191919; }
 .pd-inline-input[type="url"] { font-size:0.8rem; }
 
 /* Plan Designer: Section pill controls */
-.pd-section-pill-wrap { position:relative; display:inline-flex; }
+.pd-section-pill-wrap { position:relative; display:inline-flex; cursor:grab; touch-action:none; user-select:none; }
 .pd-pill-remove {
   position:absolute; top:-6px; right:-6px;
   width:16px; height:16px; border-radius:50%;
@@ -2036,6 +2036,8 @@ body:has(.dark-mode) { background: #191919; }
   cursor:pointer; border:none; line-height:1;
 }
 .pd-section-pill-wrap:hover .pd-pill-remove { display:flex; }
+.pd-section-pill-wrap.pill-dragging { opacity:0.85; box-shadow:0 4px 16px rgba(0,0,0,0.18); }
+.pd-section-pill-wrap.pill-placeholder { background:rgba(59,130,246,0.12); border:2px dashed #3b82f6; border-radius:8px; visibility:visible; }
 .pd-add-section-pill {
   border:1px dashed #9ca3af; background:transparent;
   color:#9ca3af; cursor:pointer;

@@ -257,6 +257,7 @@
           <button class="quick-add-btn" onclick="seAddSection('chorus')">Chorus</button>
           <button class="quick-add-btn" onclick="seAddSection('bridge')">Bridge</button>
           <button class="quick-add-btn" onclick="seAddSection('solo')">Solo</button>
+          <button class="quick-add-btn" onclick="seAddSection('break')">Break</button>
           <button class="quick-add-btn" onclick="seAddSection('outro')">Outro</button>
           <div class="pd-custom-row-inline" id="se-custom-row" style="display:none">
             <input type="text" id="se-custom-name" class="form-input custom-name-input" placeholder="Section name" maxlength="50" onkeydown="if(event.key==='Enter')seAddCustomSection()" />
@@ -464,11 +465,12 @@
 
               <!-- Edit controls -->
               <div class="card-controls-bar se-edit-controls" onclick="event.stopPropagation()">
+                {{$exSectionID := .SectionID}}
                 <select class="card-section-select" onchange="seSetSection('{{.ID}}',this.value)">
                   <option value="" disabled{{if not .SectionID}} selected{{end}}>Section…</option>
                   {{range $.SectionGroups}}
                     {{if .Label}}
-                    <option value="{{.Section.ID}}"{{if eq $.Song.ID ""}}{{end}}>{{.Label}}</option>
+                    <option value="{{.Section.ID}}"{{if eq .Section.ID $exSectionID}} selected{{end}}>{{.Label}}</option>
                     {{end}}
                   {{end}}
                 </select>

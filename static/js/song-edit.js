@@ -341,6 +341,133 @@
   }
 
   // ===== Section Management =====
+  // --- Pill drag-to-reorder state ---
+  var pillDragState = null; // { index, wrap, placeholder, startX, startY, offsetX, offsetY }
+
+  function initPillDrag(wrap, index) {
+    function onPointerDown(e) {
+      // Ignore the remove button
+      if (e.target.closest('.pd-pill-remove')) return;
+      e.preventDefault();
+      var rect = wrap.getBoundingClientRect();
+      pillDragState = {
+        index: index,
+        wrap: wrap,
+        startX: e.clientX,
+        startY: e.clientY,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        width: rect.width,
+        height: rect.height,
+        moved: false,
+        placeholder: null
+      };
+      wrap.setPointerCapture(e.pointerId);
+      wrap.addEventListener('pointermove', onPointerMove);
+      wrap.addEventListener('pointerup', onPointerUp);
+      wrap.addEventListener('pointercancel', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!pillDragState) return;
+      var dx = e.clientX - pillDragState.startX;
+      var dy = e.clientY - pillDragState.startY;
+      // Only start drag after a small threshold to allow clicks
+      if (!pillDragState.moved && Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+
+      if (!pillDragState.moved) {
+        pillDragState.moved = true;
+        // Create placeholder
+        var ph = document.createElement('span');
+        ph.className = 'pd-section-pill-wrap pill-placeholder';
+        ph.style.width = pillDragState.width + 'px';
+        ph.style.height = pillDragState.height + 'px';
+        wrap.parentNode.insertBefore(ph, wrap);
+        pillDragState.placeholder = ph;
+        // Float the dragged pill
+        wrap.classList.add('pill-dragging');
+        wrap.style.position = 'fixed';
+        wrap.style.zIndex = '9999';
+        wrap.style.width = pillDragState.width + 'px';
+        wrap.style.pointerEvents = 'none';
+      }
+
+      wrap.style.left = (e.clientX - pillDragState.offsetX) + 'px';
+      wrap.style.top = (e.clientY - pillDragState.offsetY) + 'px';
+
+      // Find which pill we're hovering over and move placeholder
+      var container = document.getElementById('se-section-pills');
+      var pills = Array.from(container.querySelectorAll('.pd-section-pill-wrap:not(.pill-dragging):not(.pill-placeholder)'));
+      var target = null;
+      var insertBefore = true;
+      for (var p = 0; p < pills.length; p++) {
+        var r = pills[p].getBoundingClientRect();
+        var midX = r.left + r.width / 2;
+        if (e.clientX < midX) {
+          target = pills[p];
+          insertBefore = true;
+          break;
+        } else {
+          target = pills[p];
+          insertBefore = false;
+        }
+      }
+
+      if (target && pillDragState.placeholder) {
+        if (insertBefore) {
+          container.insertBefore(pillDragState.placeholder, target);
+        } else {
+          // Insert after target
+          container.insertBefore(pillDragState.placeholder, target.nextSibling);
+        }
+      }
+    }
+
+    function onPointerUp(e) {
+      if (!pillDragState) return;
+      wrap.removeEventListener('pointermove', onPointerMove);
+      wrap.removeEventListener('pointerup', onPointerUp);
+      wrap.removeEventListener('pointercancel', onPointerUp);
+      try { wrap.releasePointerCapture(e.pointerId); } catch(ex) {}
+
+      if (!pillDragState.moved) {
+        pillDragState = null;
+        return;
+      }
+
+      // Determine new index from placeholder position
+      var container = document.getElementById('se-section-pills');
+      var allWraps = Array.from(container.querySelectorAll('.pd-section-pill-wrap:not(.pill-dragging)'));
+      var newIndex = allWraps.indexOf(pillDragState.placeholder);
+      // Adjust: items after old position shift down
+      var oldIndex = pillDragState.index;
+
+      // Remove placeholder and reset styles
+      if (pillDragState.placeholder) pillDragState.placeholder.remove();
+      wrap.classList.remove('pill-dragging');
+      wrap.style.position = '';
+      wrap.style.zIndex = '';
+      wrap.style.width = '';
+      wrap.style.left = '';
+      wrap.style.top = '';
+      wrap.style.pointerEvents = '';
+
+      pillDragState = null;
+
+      if (newIndex < 0 || newIndex === oldIndex) return;
+
+      // Reorder structure array
+      var moved = structure.splice(oldIndex, 1)[0];
+      structure.splice(newIndex, 0, moved);
+      structure.forEach(function(s, idx) { s.order = idx; });
+      isDirty = true;
+      renderSectionPills();
+      updateExerciseSectionSelects();
+    }
+
+    wrap.addEventListener('pointerdown', onPointerDown);
+  }
+
   function renderSectionPills() {
     var container = document.getElementById('se-section-pills');
     if (!container) return;
@@ -355,8 +482,9 @@
 
       var wrap = document.createElement('span');
       wrap.className = 'pd-section-pill-wrap';
+      wrap.dataset.pillIndex = i;
 
-      var pill = document.createElement('button');
+      var pill = document.createElement('span');
       pill.className = 'section-pill';
       pill.style.background = tint;
       pill.style.borderColor = border;
@@ -376,6 +504,9 @@
       wrap.appendChild(pill);
       wrap.appendChild(removeBtn);
       container.appendChild(wrap);
+
+      // Attach drag-to-reorder
+      initPillDrag(wrap, i);
     });
 
     // Add "+" pill
