@@ -6,38 +6,35 @@ var _statsSectionMap = {};
 var _statsWeekLogs = null;
 var _statsGroupMode = 'song-order';
 var _statsCurrentMonday = null;
+var _statsActiveTab = 'progress'; // 'progress' | 'sessions'
 
-// ===== Open / Close =====
+// ===== Toggle Drawer =====
+function toggleStatsDrawer() {
+  if (_statsDrawerOpen) {
+    closeStatsDrawer();
+  } else {
+    openStatsDrawer();
+  }
+}
+
 function openStatsDrawer() {
   var drawer = document.getElementById('stats-drawer');
   if (!drawer) return;
 
-  // Parse song data
-  _statsSongData = JSON.parse(drawer.dataset.songJson || '{}');
-  _buildSectionMap();
+  _ensureSongData();
+  _syncGroupModeFromViewMode();
 
-  // Slide open
   drawer.classList.add('open');
   _statsDrawerOpen = true;
 
-  // Highlight stats button
   var btn = document.getElementById('stats-toggle-btn');
   if (btn) btn.classList.add('active');
 
-  // Render all sections
-  renderHealthBar();
-  loadWeeklyChart();
-  renderHeatMap();
+  // Render active tab content
+  _renderActiveTab();
 
-  // Close bar detail on outside click
+  // Listen for clicks to close bar detail
   drawer.addEventListener('click', _onDrawerScrollClick);
-}
-
-function _onDrawerScrollClick(e) {
-  // Close bar detail if click is outside chart/detail area
-  if (!e.target.closest('#stats-weekly-chart') && !e.target.closest('#stats-bar-detail')) {
-    hideBarDetail();
-  }
 }
 
 function closeStatsDrawer() {
@@ -45,24 +42,122 @@ function closeStatsDrawer() {
   if (!drawer) return;
 
   hideBarDetail();
+  hideCardDetail();
   drawer.removeEventListener('click', _onDrawerScrollClick);
 
+  // Snap max-height to actual content height so the close animation starts immediately
+  drawer.style.maxHeight = drawer.scrollHeight + 'px';
+  drawer.offsetHeight; // force reflow
   drawer.classList.remove('open');
+  drawer.style.maxHeight = '';
+
   _statsDrawerOpen = false;
 
-  // Un-highlight stats button
   var btn = document.getElementById('stats-toggle-btn');
   if (btn) btn.classList.remove('active');
 }
 
-// Override the existing toggleStats to open the drawer instead
-function toggleStats() {
-  if (_statsDrawerOpen) {
-    closeStatsDrawer();
-  } else {
-    openStatsDrawer();
+function switchStatsTab(tab) {
+  if (tab === _statsActiveTab && _statsDrawerOpen) return;
+  _statsActiveTab = tab;
+
+  // Update tab buttons
+  document.querySelectorAll('.stats-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+
+  // Update tab content
+  document.querySelectorAll('.stats-tab-content').forEach(function(c) {
+    c.classList.toggle('active', c.id === 'stats-tab-' + tab);
+  });
+
+  // Render content
+  _renderActiveTab();
+}
+
+function _renderActiveTab() {
+  if (_statsActiveTab === 'progress') {
+    renderHealthBar();
+    renderHeatMap();
+  } else if (_statsActiveTab === 'sessions') {
+    loadWeeklyChart();
   }
 }
+
+// ===== Open / Close Panels (legacy wrappers) =====
+function _getStatsDataEl() {
+  return document.getElementById('stats-drawer');
+}
+
+function _ensureSongData() {
+  if (_statsSongData) return;
+  var el = _getStatsDataEl();
+  if (!el) return;
+  _statsSongData = JSON.parse(el.dataset.songJson || '{}');
+  _buildSectionMap();
+}
+
+// Legacy compatibility
+function toggleStatsPanel(which) {
+  if (!_statsDrawerOpen) {
+    openStatsDrawer();
+  }
+  switchStatsTab(which);
+}
+
+function openStatsPanel(which) {
+  openStatsDrawer();
+  switchStatsTab(which);
+}
+
+function closeStatsPanel() {
+  closeStatsDrawer();
+}
+
+function toggleStats() {
+  toggleStatsDrawer();
+}
+
+function toggleStatsMenu() {
+  toggleStatsDrawer();
+}
+
+function _onDrawerScrollClick(e) {
+  // Close bar detail if click is outside chart/detail area
+  if (!e.target.closest('#stats-weekly-chart') && !e.target.closest('#stats-bar-detail')) {
+    hideBarDetail();
+  }
+  // Close card detail if click is outside the card detail section
+  var cardSection = document.getElementById('stats-card-detail-section');
+  if (cardSection && cardSection.style.display !== 'none' &&
+      !e.target.closest('#stats-card-detail-section') &&
+      !e.target.closest('.stats-heatmap-cell') &&
+      !e.target.closest('.stats-heatmap-transition')) {
+    hideCardDetail();
+  }
+}
+
+function hideCardDetail() {
+  var section = document.getElementById('stats-card-detail-section');
+  if (section) section.style.display = 'none';
+  document.querySelectorAll('.stats-heatmap-cell.active').forEach(function(c) {
+    c.classList.remove('active');
+  });
+}
+
+// ===== Click-outside to close stats drawer =====
+document.addEventListener('click', function(e) {
+  if (!_statsDrawerOpen) return;
+  var drawer = document.getElementById('stats-drawer');
+  var toggleBtn = document.getElementById('stats-toggle-btn');
+  if (!drawer) return;
+  // Ignore clicks inside the drawer or on the toggle button
+  if (drawer.contains(e.target)) return;
+  if (toggleBtn && toggleBtn.contains(e.target)) return;
+  // Ignore clicks on interactive elements (buttons, links, inputs, selects)
+  if (e.target.closest('button, a, input, select, textarea, [onclick]')) return;
+  closeStatsDrawer();
+});
 
 // ===== Helpers =====
 function _buildSectionMap() {
@@ -135,22 +230,22 @@ function _sectionColor(sectionId) {
   return '#9ca3af';
 }
 
-// ===== Stats Group Mode Toggle =====
+// ===== Stats Group Mode (driven by main view-mode segmented control) =====
 function setStatsGroupMode(btn, mode) {
-  var container = btn.closest('.drawer-segmented-sm');
-  if (!container) return;
-  container.querySelectorAll('.seg-btn-sm').forEach(function(b) {
-    b.classList.remove('active');
-  });
-  btn.classList.add('active');
+  // Legacy support — now driven by the main view-mode-segmented control
   _statsGroupMode = mode;
 
-  // Re-render all sections
+  // Re-render progress sections
   renderHealthBar();
-  if (_statsWeekLogs !== null && _statsCurrentMonday) {
-    renderWeeklyChart(_statsWeekLogs, _statsCurrentMonday);
-  }
   renderHeatMap();
+}
+
+// Read the current view mode from the main segmented control
+function _syncGroupModeFromViewMode() {
+  var activeBtn = document.querySelector('.view-mode-btn.active');
+  if (activeBtn) {
+    _statsGroupMode = activeBtn.dataset.mode || 'song-order';
+  }
 }
 
 function _buildMergedTypeMap() {
@@ -184,7 +279,7 @@ function _findExerciseSectionType(exerciseId) {
 
 // ===== Section 1: Song Health Bar =====
 function renderHealthBar() {
-  var drawer = document.getElementById('stats-drawer');
+  var drawer = _getStatsDataEl();
   if (!drawer) return;
 
   var stageCounts = JSON.parse(drawer.dataset.stageCounts || '[]');
@@ -291,7 +386,7 @@ function _renderHealthBarBySection(bar, stageNames) {
 
 // ===== Section 2: Weekly Practice Chart =====
 function loadWeeklyChart() {
-  var drawer = document.getElementById('stats-drawer');
+  var drawer = _getStatsDataEl();
   if (!drawer) return;
   var songId = drawer.dataset.songId;
 
@@ -671,6 +766,9 @@ function renderHeatMap() {
 }
 
 function _renderHeatMapSongOrder(container, structure, regularExercises, transitionMap) {
+  var grid = document.createElement('div');
+  grid.className = 'stats-heatmap-columns';
+
   structure.forEach(function(section) {
     var sectionExercises = regularExercises.filter(function(ex) { return ex.sectionId === section.id; });
     if (sectionExercises.length === 0) return;
@@ -678,30 +776,33 @@ function _renderHeatMapSongOrder(container, structure, regularExercises, transit
     var sectionInfo = _statsSectionMap[section.id];
     var label = sectionInfo ? sectionInfo.label : section.type;
 
-    var sectionDiv = document.createElement('div');
-    sectionDiv.className = 'stats-heatmap-section';
+    var colDiv = document.createElement('div');
+    colDiv.className = 'stats-heatmap-column';
 
     var labelEl = document.createElement('div');
-    labelEl.className = 'stats-heatmap-label';
+    labelEl.className = 'stats-heatmap-column-label';
     labelEl.textContent = label;
-    sectionDiv.appendChild(labelEl);
+    colDiv.appendChild(labelEl);
 
-    var row = document.createElement('div');
-    row.className = 'stats-heatmap-row';
-    sectionExercises.forEach(function(ex, idx) {
-      row.appendChild(_createHeatmapCell(ex));
-      if (idx < sectionExercises.length - 1) {
-        var nextEx = sectionExercises[idx + 1];
-        row.appendChild(_createTransitionDivider(ex, nextEx, transitionMap));
-      }
+    var cellsDiv = document.createElement('div');
+    cellsDiv.className = 'stats-heatmap-column-cells';
+    sectionExercises.forEach(function(ex) {
+      cellsDiv.appendChild(_createHeatmapCell(ex));
     });
-    sectionDiv.appendChild(row);
-    container.appendChild(sectionDiv);
+    colDiv.appendChild(cellsDiv);
+
+    grid.appendChild(colDiv);
   });
+
+  container.appendChild(grid);
 }
 
 function _renderHeatMapBySection(container, structure, regularExercises, transitionMap) {
   var merged = _buildMergedTypeMap();
+
+  // Build the columnar layout in the same order as the pills (typeOrder)
+  var grid = document.createElement('div');
+  grid.className = 'stats-heatmap-columns';
 
   merged.typeOrder.forEach(function(type) {
     var sectionIds = merged.typeToSectionIds[type];
@@ -715,22 +816,25 @@ function _renderHeatMapBySection(container, structure, regularExercises, transit
 
     var label = sectionIds.length > 1 ? _pluralize(type) : _capitalize(type);
 
-    var sectionDiv = document.createElement('div');
-    sectionDiv.className = 'stats-heatmap-section';
+    var colDiv = document.createElement('div');
+    colDiv.className = 'stats-heatmap-column';
 
     var labelEl = document.createElement('div');
-    labelEl.className = 'stats-heatmap-label';
+    labelEl.className = 'stats-heatmap-column-label';
     labelEl.textContent = label;
-    sectionDiv.appendChild(labelEl);
+    colDiv.appendChild(labelEl);
 
-    var row = document.createElement('div');
-    row.className = 'stats-heatmap-row';
+    var cellsDiv = document.createElement('div');
+    cellsDiv.className = 'stats-heatmap-column-cells';
     typeExercises.forEach(function(ex) {
-      row.appendChild(_createHeatmapCell(ex));
+      cellsDiv.appendChild(_createHeatmapCell(ex));
     });
-    sectionDiv.appendChild(row);
-    container.appendChild(sectionDiv);
+    colDiv.appendChild(cellsDiv);
+
+    grid.appendChild(colDiv);
   });
+
+  container.appendChild(grid);
 }
 
 function _createHeatmapCell(exercise) {
@@ -776,7 +880,7 @@ function _createTransitionDivider(ex1, ex2, transitionMap) {
 }
 
 function _toggleTransition(exId1, exId2, track) {
-  var songId = document.getElementById('stats-drawer').dataset.songId;
+  var songId = _getStatsDataEl().dataset.songId;
   fetch('/api/songs/' + songId + '/transitions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -793,7 +897,7 @@ function _toggleTransition(exId1, exId2, track) {
 }
 
 function _getStageLabel(stage) {
-  var drawer = document.getElementById('stats-drawer');
+  var drawer = _getStatsDataEl();
   if (!drawer) return 'Stage ' + stage;
   var names = JSON.parse(drawer.dataset.stageNames || '[]');
   return names[stage - 1] || ('Stage ' + stage);
@@ -855,7 +959,7 @@ function showCardDetail(exerciseId) {
   container.appendChild(stageChart);
 
   // Load stage log
-  var songId = document.getElementById('stats-drawer').dataset.songId;
+  var songId = _getStatsDataEl().dataset.songId;
   fetch('/api/songs/' + songId + '/stage-log')
     .then(function(r) { return r.json(); })
     .then(function(logs) {
@@ -885,9 +989,6 @@ function showCardDetail(exerciseId) {
     .catch(function() {
       dailyChart.innerHTML = '';
     });
-
-  // Scroll to the detail section
-  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   // Highlight the active cell in heatmap
   document.querySelectorAll('.stats-heatmap-cell').forEach(function(c) {

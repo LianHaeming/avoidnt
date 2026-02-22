@@ -76,9 +76,9 @@ func Load(assetVer string) *Templates {
 		// Colors
 		"stageColor":  stageColor,
 		"hexToRGBA":   hexToRGBA,
-		"stageTint":   func(stage int) string { return hexToRGBA(stageColor(stage), 0.1) },
-		"stageBorder": func(stage int) string { return hexToRGBA(stageColor(stage), 0.35) },
-		"stageText":   func(stage int) string { return hexToRGBA(stageColor(stage), 0.7) },
+		"stageTint":   func(stage int) string { return hexToRGBA(stageColor(stage), 0.18) },
+		"stageBorder": func(stage int) string { return hexToRGBA(stageColor(stage), 0.7) },
+		"stageText":   func(stage int) string { return stageColor(stage) },
 
 		// Time
 		"relativeTime":   relativeTime,

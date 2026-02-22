@@ -130,7 +130,7 @@ function onStageChange(select, songId, exerciseId) {
     const color = colors[newStage] || '#9ca3af';
     select.style.color = color;
     var innerCard = card.querySelector('.expanded-card');
-    if (innerCard) innerCard.style.borderLeftColor = hexToRGBA(color, 0.35);
+    if (innerCard) innerCard.style.borderLeftColor = hexToRGBA(color, 0.7);
     card.dataset.stage = newStage;
 
     // Update section nav pill for this exercise's section
@@ -160,9 +160,9 @@ function updateSectionPill(sectionId) {
     if (!hasCards) lowest = 0;
     var colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
     var color = colors[lowest] || '#9ca3af';
-    pill.style.color = hexToRGBA(color, 0.7);
-    pill.style.background = hexToRGBA(color, 0.1);
-    pill.style.borderColor = hexToRGBA(color, 0.35);
+    pill.style.color = color;
+    pill.style.background = hexToRGBA(color, 0.18);
+    pill.style.borderColor = hexToRGBA(color, 0.7);
   });
 }
 
@@ -550,7 +550,7 @@ function _lowestStageOfCards(cards) {
 function _pillColorStyle(stage) {
   var colors = { 1:'#ef4444', 2:'#f97316', 3:'#eab308', 4:'#84cc16', 5:'#22c55e' };
   var color = colors[stage] || '#9ca3af';
-  return 'background:' + hexToRGBA(color, 0.1) + ';border-color:' + hexToRGBA(color, 0.35) + ';color:' + hexToRGBA(color, 0.7);
+  return 'background:' + hexToRGBA(color, 0.18) + ';border-color:' + hexToRGBA(color, 0.7) + ';color:' + color;
 }
 
 function _capitalize(s) {
@@ -610,6 +610,21 @@ function setViewMode(btn) {
   btn.classList.add('active');
 
   var mode = btn.dataset.mode;
+
+  // Sync stats drawer group mode and re-render if drawer is open
+  if (typeof _statsGroupMode !== 'undefined') {
+    _statsGroupMode = mode;
+    if (typeof _statsDrawerOpen !== 'undefined' && _statsDrawerOpen) {
+      if (typeof _statsActiveTab !== 'undefined' && _statsActiveTab === 'progress') {
+        if (typeof renderHealthBar === 'function') renderHealthBar();
+        if (typeof renderHeatMap === 'function') renderHeatMap();
+      }
+      if (typeof _statsActiveTab !== 'undefined' && _statsActiveTab === 'sessions') {
+        if (typeof loadWeeklyChart === 'function') loadWeeklyChart();
+      }
+    }
+  }
+
   var structure = _getSongStructure();
   var allCards = _collectAllCards();
   var exerciseContainer = document.getElementById('se-exercises-container');
@@ -633,8 +648,6 @@ function setViewMode(btn) {
 
   if (mode === 'by-section') {
     _renderBySection(structure, sectionMap, allCards, exerciseContainer, pillNav);
-  } else if (mode === 'transitions') {
-    _renderTransitions(structure, sectionMap, allCards, exerciseContainer, pillNav);
   } else {
     _renderSongOrder(structure, sectionMap, typeCounts, allCards, exerciseContainer, pillNav);
   }
@@ -706,43 +719,6 @@ function _renderBySection(structure, sectionMap, allCards, exerciseContainer, pi
   });
 }
 
-function _renderTransitions(structure, sectionMap, allCards, exerciseContainer, pillNav) {
-  if (structure.length < 2) {
-    // Not enough sections for transitions — show flat
-    var group = _buildSectionGroup('__flat__', '', allCards);
-    exerciseContainer.appendChild(group);
-    return;
-  }
-
-  for (var i = 0; i < structure.length - 1; i++) {
-    var secA = structure[i];
-    var secB = structure[i + 1];
-    var idA = secA.ID || secA.id;
-    var idB = secB.ID || secB.id;
-    var typeA = _capitalize(secA.Type || secA.type || '');
-    var typeB = _capitalize(secB.Type || secB.type || '');
-    var label = typeA + ' \u2192 ' + typeB;
-    var groupId = 'trans-' + i;
-
-    var matchingCards = allCards.filter(function(c) {
-      return c.dataset.sectionId === idA || c.dataset.sectionId === idB;
-    });
-
-    // Clone cards since a section's cards may appear in multiple transition groups
-    var clones = matchingCards.map(function(c) { return c.cloneNode(true); });
-
-    var group = _buildSectionGroup(groupId, label, clones);
-    exerciseContainer.appendChild(group);
-
-    if (pillNav) {
-      var stage = _lowestStageOfCards(matchingCards);
-      var pill = _buildPill(groupId, label, stage, [idA, idB]);
-      if (matchingCards.length === 0) pill.disabled = true;
-      pillNav.appendChild(pill);
-    }
-  }
-}
-
 // ===== Section Filter Pills =====
 function toggleSectionFilter(btn) {
   if (btn.disabled) return;
@@ -810,8 +786,7 @@ function toggleCleanViewBtn(key, btn) {
       }
       var panels = [
         { el: 'song-notes-section', btn: 'notes-toggle-btn' },
-        { el: 'metronome-panel', btn: 'metronome-toggle-btn' },
-        { el: 'stats-panel', btn: 'stats-toggle-btn' }
+        { el: 'metronome-panel', btn: 'metronome-toggle-btn' }
       ];
       panels.forEach(function(p) {
         var el = document.getElementById(p.el);
@@ -821,6 +796,8 @@ function toggleCleanViewBtn(key, btn) {
           if (btn) btn.classList.remove('active');
         }
       });
+      // Close stats menu & panels
+      if (typeof closeStatsDrawer === 'function') closeStatsDrawer();
       // Close master zoom drawer
       var mzActions = document.getElementById('master-zoom-actions');
       var mzBtn = document.getElementById('master-zoom-toggle-btn');
